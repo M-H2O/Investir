@@ -1,0 +1,2204 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Boussole — Comprendre, comparer, décider. Par vous-même.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Public+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#FBFBF7;
+  --card:#FFFFFF;
+  --ink:#1C2540;
+  --ink-soft:#525C78;
+  --ink-faint:#8A92A8;
+  --rule:#C9D7E9;
+  --rule-soft:#E1E9F4;
+  --red:#D0453C;
+  --green:#1F7A56;
+  --green-soft:#E7F2EC;
+  --line:#E5E7E0;
+  --amber:#8A6D1F;
+  --amber-soft:#F7F0DC;
+  --display:'Young Serif', Georgia, serif;
+  --body:'Public Sans', system-ui, -apple-system, sans-serif;
+  --mono:'IBM Plex Mono', ui-monospace, monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{animation:none!important;transition:none!important}
+}
+body{
+  font-family:var(--body);
+  background:var(--paper);
+  color:var(--ink);
+  font-size:16px;
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+a{color:inherit}
+button{font-family:inherit;cursor:pointer}
+
+/* ---------- NAV ---------- */
+.topbar{
+  position:sticky;top:0;z-index:50;
+  background:rgba(251,251,247,.92);
+  backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--line);
+}
+.topbar-inner{
+  max-width:1100px;margin:0 auto;padding:0 20px;
+  display:flex;align-items:center;gap:20px;height:60px;
+}
+.brand{display:flex;align-items:baseline;gap:8px;flex-shrink:0}
+.brand-name{font-family:var(--display);font-size:1.25rem;letter-spacing:.01em}
+.brand-tag{font-size:.68rem;color:var(--ink-faint);font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em}
+.nav{display:flex;gap:2px;margin-left:auto;overflow-x:auto;scrollbar-width:none}
+.nav::-webkit-scrollbar{display:none}
+.nav button{
+  background:none;border:none;padding:8px 12px;border-radius:8px;
+  font-size:.86rem;font-weight:500;color:var(--ink-soft);white-space:nowrap;
+  transition:background .15s,color .15s;
+}
+.nav button:hover{background:#F0F1EA;color:var(--ink)}
+.nav button[aria-current="true"]{background:var(--ink);color:#fff}
+.nav button:focus-visible{outline:2px solid var(--red);outline-offset:2px}
+
+/* ---------- LAYOUT ---------- */
+.page{display:none}
+.page.active{display:block}
+.wrap{max-width:1100px;margin:0 auto;padding:0 20px}
+.section-pad{padding:56px 0 72px}
+
+/* ---------- HERO (grille Séyès) ---------- */
+.hero{
+  position:relative;
+  padding:84px 0 96px;
+  overflow:hidden;
+  background:
+    repeating-linear-gradient(180deg, transparent 0 31px, var(--rule-soft) 31px 32px),
+    repeating-linear-gradient(90deg, transparent 0 127px, var(--rule-soft) 127px 128px),
+    var(--paper);
+}
+.hero::before{
+  content:"";position:absolute;top:0;bottom:0;left:max(24px, calc(50% - 550px));
+  width:2px;background:var(--red);opacity:.55;
+}
+.hero::after{
+  content:"";position:absolute;inset:0;
+  background:linear-gradient(180deg, rgba(251,251,247,0) 55%, var(--paper) 100%);
+  pointer-events:none;
+}
+.hero .wrap{position:relative;z-index:2}
+.hero-kicker{
+  font-family:var(--mono);font-size:.75rem;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-soft);margin-bottom:20px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+}
+.chip{
+  display:inline-flex;align-items:center;gap:6px;
+  border:1px solid var(--line);background:var(--card);
+  padding:3px 10px;border-radius:99px;font-size:.72rem;
+}
+.chip.fresh{border-color:#CFE3D8;background:var(--green-soft);color:var(--green)}
+h1{
+  font-family:var(--display);font-weight:400;
+  font-size:clamp(2rem, 5.2vw, 3.4rem);
+  line-height:1.15;max-width:15ch;letter-spacing:-.01em;
+}
+.souligne{position:relative;white-space:nowrap}
+.souligne svg{
+  position:absolute;left:-2%;bottom:-.18em;width:104%;height:.42em;overflow:visible;
+}
+.souligne path{fill:none;stroke:var(--red);stroke-width:3.4;stroke-linecap:round}
+.hero-sub{
+  margin-top:24px;max-width:52ch;font-size:1.08rem;color:var(--ink-soft);
+}
+.hero-sub strong{color:var(--ink);font-weight:600}
+.hero-cta{margin-top:32px;display:flex;gap:12px;flex-wrap:wrap}
+.btn{
+  display:inline-flex;align-items:center;gap:8px;
+  border-radius:10px;padding:12px 20px;font-size:.95rem;font-weight:600;
+  border:1px solid var(--ink);transition:transform .12s, box-shadow .12s;
+  text-decoration:none;
+}
+.btn:focus-visible{outline:2px solid var(--red);outline-offset:2px}
+.btn-primary{background:var(--ink);color:#fff}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(28,37,64,.18)}
+.btn-ghost{background:transparent;color:var(--ink)}
+.btn-ghost:hover{background:#F0F1EA}
+
+/* ---------- SECTION HEADERS ---------- */
+.eyebrow{
+  font-family:var(--mono);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--red);margin-bottom:10px;
+}
+h2{
+  font-family:var(--display);font-weight:400;font-size:clamp(1.5rem,3.2vw,2.1rem);
+  line-height:1.2;letter-spacing:-.01em;max-width:24ch;
+}
+.section-intro{margin-top:14px;max-width:62ch;color:var(--ink-soft)}
+.section-intro strong{color:var(--ink)}
+
+/* ---------- NOTICE / DISCLAIMERS ---------- */
+.notice{
+  margin-top:22px;border:1px solid var(--line);border-left:3px solid var(--red);
+  background:var(--card);border-radius:0 10px 10px 0;
+  padding:14px 18px;font-size:.86rem;color:var(--ink-soft);max-width:760px;
+}
+.notice strong{color:var(--ink)}
+.notice.green{border-left-color:var(--green)}
+.notice.amber{border-left-color:var(--amber);background:var(--amber-soft)}
+
+/* ---------- ENVELOPPES ---------- */
+.env-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-top:32px}
+.env-card{
+  background:var(--card);border:1px solid var(--line);border-radius:14px;
+  padding:24px;display:flex;flex-direction:column;
+}
+.env-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.env-card h3{font-family:var(--display);font-weight:400;font-size:1.3rem}
+.env-abbr{font-family:var(--mono);font-size:.72rem;color:var(--ink-faint)}
+.env-oneliner{margin-top:8px;font-size:.92rem;color:var(--ink-soft);min-height:3.4em}
+.env-facts{margin-top:16px;border-top:1px dashed var(--line);padding-top:14px;display:grid;gap:9px}
+.fact{display:flex;justify-content:space-between;gap:12px;font-size:.85rem}
+.fact dt{color:var(--ink-faint)}
+.fact dd{font-family:var(--mono);font-size:.82rem;text-align:right;color:var(--ink)}
+.env-toggle{
+  margin-top:16px;background:none;border:none;color:var(--ink);font-weight:600;font-size:.85rem;
+  display:inline-flex;align-items:center;gap:6px;padding:4px 0;align-self:flex-start;
+  border-bottom:1px solid transparent;
+}
+.env-toggle:hover{border-bottom-color:var(--ink)}
+.env-toggle:focus-visible{outline:2px solid var(--red);outline-offset:2px}
+.env-more{display:none;margin-top:12px;font-size:.86rem;color:var(--ink-soft)}
+.env-more.open{display:block}
+.env-more ul{margin:6px 0 0 18px;display:grid;gap:5px}
+.fisc-banner{
+  margin-top:36px;border:1px solid #CFE3D8;background:var(--green-soft);
+  border-radius:14px;padding:20px 24px;max-width:820px;
+}
+.fisc-banner h4{font-size:.95rem;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.fisc-banner p{font-size:.88rem;color:var(--ink-soft);margin-top:8px}
+.fisc-banner .num{font-family:var(--mono);font-weight:600;color:var(--green)}
+
+/* ---------- PROFILS ---------- */
+.profil-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(255px,1fr));gap:16px;margin-top:32px}
+.profil-card{
+  background:var(--card);border:1px solid var(--line);border-radius:14px;padding:24px;
+  display:flex;flex-direction:column;gap:14px;position:relative;
+  transition:border-color .15s, box-shadow .15s;
+}
+.profil-card:hover{border-color:var(--ink-faint)}
+.profil-card.selected{border-color:var(--green);box-shadow:0 0 0 1px var(--green)}
+.profil-card h3{font-family:var(--display);font-weight:400;font-size:1.15rem}
+.profil-traits{display:grid;gap:8px;font-size:.84rem}
+.trait{display:flex;justify-content:space-between;gap:10px}
+.trait span:first-child{color:var(--ink-faint)}
+.trait span:last-child{font-family:var(--mono);font-size:.8rem}
+.alloc{display:flex;height:16px;border-radius:8px;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(28,37,64,.08)}
+.alloc div{height:100%}
+.a-act{background:#2F6FED}
+.a-obl{background:#12A67C}
+.a-liq{background:#F0A830}
+.alloc-legende{display:flex;gap:6px 14px;flex-wrap:wrap;font-size:.76rem;color:var(--ink-soft)}
+.alloc-legende b{font-family:var(--mono);font-size:.78rem;color:var(--ink)}
+.alloc-legende i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.profil-questions{font-size:.83rem;color:var(--ink-soft);border-top:1px dashed var(--line);padding-top:12px}
+.profil-questions em{font-style:normal;font-weight:600;color:var(--ink)}
+.profil-self{
+  margin-top:auto;background:none;border:1px solid var(--line);border-radius:9px;
+  padding:9px 12px;font-size:.84rem;font-weight:600;color:var(--ink);
+  transition:background .15s,border-color .15s;
+}
+.profil-self:hover{background:var(--green-soft);border-color:#CFE3D8}
+.profil-card.selected .profil-self{background:var(--green);border-color:var(--green);color:#fff}
+.profil-self:focus-visible{outline:2px solid var(--red);outline-offset:2px}
+
+/* ---------- FILTRES + TABLES ---------- */
+.filtres{
+  margin-top:32px;background:var(--card);border:1px solid var(--line);border-radius:14px;
+  padding:20px 22px;display:flex;gap:22px;flex-wrap:wrap;align-items:flex-end;
+}
+.filtre{display:flex;flex-direction:column;gap:6px}
+.filtre label{font-size:.74rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-faint)}
+.filtre select, .filtre input[type="search"]{
+  font-family:var(--body);font-size:.9rem;padding:8px 10px;border:1px solid var(--line);
+  border-radius:8px;background:var(--paper);color:var(--ink);min-width:150px;
+}
+.filtre select:focus-visible, .filtre input:focus-visible{outline:2px solid var(--red);outline-offset:1px}
+.filtre-range{display:flex;align-items:center;gap:10px}
+.filtre-range input[type="range"]{accent-color:var(--ink);width:130px}
+.filtre-range output{font-family:var(--mono);font-size:.82rem;min-width:56px}
+.filtre-check{display:flex;align-items:center;gap:8px;font-size:.88rem;padding:8px 0}
+.filtre-check input{width:16px;height:16px;accent-color:var(--green)}
+.filtre-reset{
+  margin-left:auto;background:none;border:none;font-size:.82rem;color:var(--ink-faint);
+  text-decoration:underline;padding:8px 0;
+}
+.filtre-reset:hover{color:var(--ink)}
+.compteur{margin-top:16px;font-family:var(--mono);font-size:.8rem;color:var(--ink-soft)}
+.compteur strong{color:var(--ink)}
+.table-scroll{margin-top:10px;overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--card)}
+table{width:100%;border-collapse:collapse;font-size:.86rem;min-width:880px}
+thead th{
+  text-align:left;font-size:.7rem;text-transform:uppercase;letter-spacing:.07em;
+  color:var(--ink-faint);font-weight:600;padding:13px 14px;border-bottom:1px solid var(--line);
+  background:#FCFCF9;position:sticky;top:0;
+}
+thead th.sortable{cursor:pointer;user-select:none}
+thead th.sortable:hover{color:var(--ink)}
+thead th .arrow{font-size:.8em;opacity:.6}
+tbody td{padding:12px 14px;border-bottom:1px solid #F0F1EB;vertical-align:top}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:#FAFAF5}
+td.mono{font-family:var(--mono);font-size:.82rem;white-space:nowrap}
+.etf-nom{font-weight:600}
+.etf-ticker{font-family:var(--mono);font-size:.75rem;color:var(--ink-faint)}
+.tag{
+  display:inline-block;font-size:.7rem;font-weight:600;padding:2px 8px;border-radius:99px;
+  border:1px solid var(--line);color:var(--ink-soft);white-space:nowrap;
+}
+.tag.pea{background:var(--green-soft);border-color:#CFE3D8;color:var(--green)}
+.tag.non{color:var(--ink-faint)}
+.tag.alerte{background:#FBEBE9;border-color:#EFC7C3;color:var(--red)}
+.vide{padding:36px 20px;text-align:center;color:var(--ink-faint);font-size:.9rem}
+
+
+/* ---------- LEXIQUE : termes soulignés, infobulles, fiches ---------- */
+.terme{
+  border:0;border-bottom:1.5px dotted var(--red);background:none;padding:0;
+  font:inherit;color:inherit;cursor:help;
+}
+.terme:hover{background:#FBEBE9}
+.terme:focus-visible{outline:2px solid var(--red);outline-offset:2px}
+.terme.fiche{border-bottom-style:solid;font-weight:600;cursor:pointer}
+.terme.fiche::after{content:"\00a0\203A";color:var(--red);font-weight:700}
+
+#tooltip{
+  position:fixed;z-index:200;max-width:330px;pointer-events:none;opacity:0;
+  transform:translateY(5px);transition:opacity .13s,transform .13s;
+  background:var(--ink);color:#fff;border-radius:10px;padding:12px 15px;
+  font-size:.84rem;line-height:1.5;box-shadow:0 10px 30px rgba(28,37,64,.3);
+}
+#tooltip.on{opacity:1;transform:translateY(0)}
+#tooltip b{color:#FFD2CD}
+#tooltip .tt-plus{
+  display:block;margin-top:8px;font-family:var(--mono);font-size:.68rem;
+  letter-spacing:.06em;text-transform:uppercase;color:#9BA4BF;
+}
+
+.modal-fond{
+  position:fixed;inset:0;z-index:300;background:rgba(28,37,64,.48);
+  display:none;align-items:flex-start;justify-content:center;
+  padding:36px 16px;overflow-y:auto;
+}
+.modal-fond.on{display:flex}
+.modal{
+  background:var(--card);border-radius:16px;max-width:640px;width:100%;
+  padding:34px 36px 36px;position:relative;box-shadow:0 26px 70px rgba(28,37,64,.32);
+}
+.modal .m-kicker{
+  font-family:var(--mono);font-size:.7rem;text-transform:uppercase;
+  letter-spacing:.12em;color:var(--red);margin-bottom:8px;
+}
+.modal h3{font-family:var(--display);font-weight:400;font-size:1.55rem;padding-right:44px;line-height:1.2}
+.modal-body{margin-top:20px;font-size:.94rem;color:var(--ink-soft)}
+.modal-body p{margin-bottom:14px}
+.modal-body p:last-child{margin-bottom:0}
+.modal-body strong{color:var(--ink)}
+.modal-body ul{margin:0 0 14px 20px;display:grid;gap:8px}
+.modal-body .exemple{
+  background:var(--paper);border:1px solid var(--line);border-left:3px solid var(--green);
+  border-radius:0 10px 10px 0;padding:15px 18px;margin-bottom:16px;font-size:.9rem;
+}
+.modal-body .exemple b{display:block;color:var(--ink);margin-bottom:5px;font-size:.82rem}
+.modal-close{
+  position:absolute;top:18px;right:18px;width:34px;height:34px;border-radius:50%;
+  border:1px solid var(--line);background:var(--paper);font-size:1.15rem;line-height:1;
+  color:var(--ink-soft);
+}
+.modal-close:hover{background:#F0F1EA;color:var(--ink)}
+.modal-close:focus-visible{outline:2px solid var(--red);outline-offset:2px}
+
+/* ---------- SURLIGNAGE AVANTAGE / POINT DE VIGILANCE ---------- */
+.plus,.moins{padding:0 3px;font-weight:600;color:var(--ink);border-radius:2px}
+.plus{background:linear-gradient(180deg,transparent 52%,#A8EBCB 52%)}
+.moins{background:linear-gradient(180deg,transparent 52%,#FBD3CE 52%)}
+dd .plus,dd .moins{display:inline-block}
+
+/* ---------- LES TROIS ZÉROS ---------- */
+.hero-zeros{display:flex;gap:10px;flex-wrap:wrap;margin-top:38px}
+.hero-zeros span{
+  display:inline-flex;align-items:baseline;gap:9px;background:var(--card);
+  border:1.5px solid var(--ink);border-radius:99px;padding:9px 20px 9px 15px;
+  font-size:.93rem;font-weight:600;
+}
+.hero-zeros b{font-family:var(--display);font-size:1.55rem;line-height:1;color:var(--red)}
+.promesses{
+  border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+  background:var(--card);padding:66px 0 70px;
+}
+.promesses .eyebrow,.promesses h2{text-align:center}
+.promesses h2{max-width:30ch;margin:0 auto}
+.promesses-grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(258px,1fr));
+  gap:20px;margin-top:42px;
+}
+.promesse{
+  position:relative;overflow:hidden;background:var(--paper);
+  border:1px solid var(--line);border-radius:16px;padding:26px 24px 24px;
+  transition:transform .18s,box-shadow .18s,border-color .18s;
+}
+.promesse:hover{transform:translateY(-3px);box-shadow:0 12px 32px rgba(28,37,64,.10);border-color:var(--red)}
+.p-zero{
+  font-family:var(--display);font-size:5rem;line-height:.8;color:var(--red);letter-spacing:-.045em;
+}
+.promesse h3{font-size:1.05rem;font-weight:700;margin-top:10px;letter-spacing:-.01em}
+.p-quoi{font-size:.88rem;color:var(--ink-soft);margin-top:8px}
+.p-donc{margin-top:16px;padding-top:14px;border-top:1px dashed var(--line);font-size:.87rem;color:var(--ink)}
+.p-donc i{
+  display:block;font-style:normal;font-family:var(--mono);font-size:.66rem;
+  text-transform:uppercase;letter-spacing:.11em;color:var(--green);margin-bottom:5px;
+}
+.promesses-pied{
+  margin:34px auto 0;text-align:center;max-width:66ch;
+  font-size:.87rem;color:var(--ink-faint);
+}
+.promesses-pied strong{color:var(--ink-soft)}
+
+/* ---------- CARTES ENVELOPPES QUI PIVOTENT ---------- */
+.flip{perspective:1800px}
+.flip-inner{
+  display:grid;transform-style:preserve-3d;
+  transition:transform .62s cubic-bezier(.4,.15,.2,1);
+}
+.flip.retourne .flip-inner{transform:rotateY(180deg)}
+.face{
+  grid-area:1/1;backface-visibility:hidden;-webkit-backface-visibility:hidden;
+  background:var(--card);border:1px solid var(--line);border-radius:14px;
+  padding:24px;display:flex;flex-direction:column;
+}
+.face-back{transform:rotateY(180deg)}
+.flip:not(.retourne) .face-back{pointer-events:none}
+.flip.retourne .face-front{pointer-events:none}
+.flip:hover .face{border-color:var(--ink-faint)}
+.flip:focus-visible{outline:2px solid var(--red);outline-offset:4px;border-radius:16px}
+.flip-hint{
+  margin-top:auto;padding-top:16px;display:flex;align-items:center;gap:8px;
+  font-size:.8rem;font-weight:600;color:var(--red);
+}
+.flip-hint::before{content:"\21BB";font-size:1rem}
+.face-back h3{font-family:var(--display);font-weight:400;font-size:1.15rem;margin-bottom:12px}
+.face-back .cas{
+  background:var(--paper);border:1px solid var(--line);border-left:3px solid var(--green);
+  border-radius:0 10px 10px 0;padding:14px 16px;font-size:.85rem;color:var(--ink-soft);
+}
+.face-back .cas b{display:block;color:var(--ink);font-size:.78rem;margin-bottom:6px;
+  font-family:var(--mono);text-transform:uppercase;letter-spacing:.07em}
+.face-back .cas p+p{margin-top:9px}
+.face-back ul{margin:16px 0 0 17px;display:grid;gap:8px;font-size:.84rem;color:var(--ink-soft)}
+
+/* ---------- COLONNES AFFICHABLES (comparateur) ---------- */
+.colonnes{margin-top:14px;font-size:.85rem}
+.colonnes summary{
+  cursor:pointer;display:inline-flex;align-items:center;gap:8px;
+  padding:8px 14px;border:1px solid var(--line);border-radius:9px;background:var(--card);
+  font-weight:600;list-style:none;
+}
+.colonnes summary::-webkit-details-marker{display:none}
+.colonnes summary::after{content:"\25BE";color:var(--ink-faint)}
+.colonnes[open] summary::after{content:"\25B4"}
+.colonnes summary:hover{border-color:var(--ink-faint)}
+.colonnes summary:focus-visible{outline:2px solid var(--red);outline-offset:2px}
+.col-list{
+  margin-top:10px;display:flex;flex-wrap:wrap;gap:8px;
+  background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;
+}
+.col-list label{
+  display:inline-flex;align-items:center;gap:7px;font-size:.84rem;
+  border:1px solid var(--line);border-radius:99px;padding:6px 13px;cursor:pointer;
+  background:var(--paper);transition:background .13s,border-color .13s;
+}
+.col-list label:hover{border-color:var(--ink-faint)}
+.col-list input{width:15px;height:15px;accent-color:var(--ink)}
+.col-list input:checked+span{font-weight:600}
+
+/* ---------- TABLE : lisibilité ---------- */
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+thead th.actif{color:var(--red)}
+thead th.actif .arrow{opacity:1;color:var(--red)}
+tbody td.col-nom,thead th.col-nom{
+  position:sticky;left:0;background:var(--card);z-index:2;
+  box-shadow:1px 0 0 var(--line);
+}
+thead th.col-nom{background:#FCFCF9;z-index:3}
+tbody tr:hover td.col-nom{background:#FAFAF5}
+tr.detail-row>td{position:static}
+
+/* ---------- INVESTIR DURABLE ---------- */
+.approche-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;margin-top:30px}
+.approche{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px}
+.approche .num{
+  font-family:var(--mono);font-size:.72rem;letter-spacing:.1em;color:var(--red);
+  text-transform:uppercase;margin-bottom:8px;
+}
+.approche h3{font-family:var(--display);font-weight:400;font-size:1.12rem}
+.approche p{font-size:.87rem;color:var(--ink-soft);margin-top:8px}
+.approche .ex{
+  margin-top:12px;padding-top:11px;border-top:1px dashed var(--line);
+  font-size:.8rem;color:var(--ink-faint);
+}
+.etiq{width:100%;border-collapse:collapse;font-size:.86rem;min-width:640px}
+.etiq th{
+  text-align:left;font-size:.7rem;text-transform:uppercase;letter-spacing:.07em;
+  color:var(--ink-faint);font-weight:600;padding:13px 14px;
+  border-bottom:1px solid var(--line);background:#FCFCF9;
+}
+.etiq td{padding:13px 14px;border-bottom:1px solid #F0F1EB;vertical-align:top}
+.etiq tr:last-child td{border-bottom:none}
+.etiq .nom{font-weight:600;white-space:nowrap}
+.etiq .nom small{display:block;font-weight:400;font-size:.74rem;color:var(--ink-faint);white-space:normal}
+.esg-liste{display:grid;gap:12px;margin-top:26px}
+.esg-item{
+  background:var(--card);border:1px solid var(--line);border-radius:12px;
+  padding:16px 20px;display:flex;gap:16px;flex-wrap:wrap;align-items:baseline;
+}
+.esg-item .en{font-weight:600;flex:1 1 240px}
+.esg-item .en small{display:block;font-family:var(--mono);font-size:.74rem;color:var(--ink-faint);font-weight:400}
+.esg-item .ei{font-size:.82rem;color:var(--ink-soft);flex:2 1 260px}
+.esg-item .ef{font-family:var(--mono);font-size:.82rem;white-space:nowrap}
+
+/* ---------- COURTIERS ---------- */
+.courtier-note{font-size:.8rem;color:var(--ink-soft)}
+
+/* ---------- ACTION / CHECKLIST ---------- */
+.checklist{margin-top:36px;max-width:760px;display:grid;gap:0}
+.etape{
+  display:grid;grid-template-columns:44px 1fr;gap:18px;padding:20px 0;
+  border-bottom:1px dashed var(--line);
+}
+.etape:last-child{border-bottom:none}
+.etape-num{
+  width:36px;height:36px;border-radius:50%;border:1.5px solid var(--ink);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-weight:600;font-size:.9rem;
+}
+.etape h3{font-size:1rem;font-weight:600}
+.etape p{font-size:.89rem;color:var(--ink-soft);margin-top:5px;max-width:58ch}
+.etape p a{font-weight:600}
+.etape .qui{
+  display:inline-block;margin-top:8px;font-family:var(--mono);font-size:.7rem;
+  text-transform:uppercase;letter-spacing:.08em;color:var(--green);
+}
+
+/* ---------- SONDAGE ---------- */
+.sondage{
+  margin-top:56px;border:1px solid var(--line);border-radius:16px;background:var(--card);
+  padding:32px;max-width:760px;
+}
+.sondage h3{font-family:var(--display);font-weight:400;font-size:1.35rem}
+.sondage-sub{font-size:.86rem;color:var(--ink-faint);margin-top:6px}
+.sondage-choix{margin-top:22px;display:grid;gap:10px}
+.sondage-choix button{
+  text-align:left;background:var(--paper);border:1px solid var(--line);border-radius:11px;
+  padding:14px 18px;font-size:.94rem;color:var(--ink);
+  transition:border-color .15s, background .15s;
+}
+.sondage-choix button:hover{border-color:var(--ink)}
+.sondage-choix button:focus-visible{outline:2px solid var(--red);outline-offset:2px}
+.sondage-reponse{display:none;margin-top:22px;padding:18px 20px;border-radius:11px;font-size:.92rem}
+.sondage-reponse.visible{display:block}
+.sondage-reponse.v-oui{background:var(--green-soft);border:1px solid #CFE3D8}
+.sondage-reponse.v-hesite{background:var(--amber-soft);border:1px solid #E8DBB5}
+.sondage-reponse.v-non{background:#FBEBE9;border:1px solid #EFC7C3}
+.sondage-restart{margin-top:12px;background:none;border:none;font-size:.8rem;text-decoration:underline;color:var(--ink-faint)}
+
+/* ---------- SUITE / FOOTER ---------- */
+.suite{
+  margin-top:48px;display:flex;justify-content:flex-end;
+}
+.suite button{
+  background:none;border:none;font-family:var(--display);font-size:1.05rem;color:var(--ink);
+  display:inline-flex;align-items:center;gap:10px;padding:10px 0;
+  border-bottom:1.5px solid var(--ink);
+}
+.suite button:hover{color:var(--red);border-bottom-color:var(--red)}
+.suite button:focus-visible{outline:2px solid var(--red);outline-offset:3px}
+footer{
+  border-top:1px solid var(--line);margin-top:40px;background:#F7F7F1;
+}
+.footer-inner{max-width:1100px;margin:0 auto;padding:36px 20px 48px}
+.footer-legal{font-size:.78rem;color:var(--ink-faint);max-width:80ch;line-height:1.7}
+.footer-legal strong{color:var(--ink-soft)}
+.footer-proto{
+  margin-top:18px;font-family:var(--mono);font-size:.72rem;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--ink-faint);
+}
+
+.sr-only{
+  position:absolute;width:1px;height:1px;padding:0;margin:-1px;
+  overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;
+}
+
+/* ---------- DÉTAIL ETF : composition ---------- */
+.etf-more-btn{
+  background:none;border:1px solid var(--line);border-radius:8px;
+  padding:6px 11px;font-size:.78rem;font-weight:600;color:var(--ink);white-space:nowrap;
+  transition:background .15s,border-color .15s,color .15s;
+}
+.etf-more-btn:hover{background:#F0F1EA;border-color:var(--ink-faint)}
+.etf-more-btn:focus-visible{outline:2px solid var(--red);outline-offset:2px}
+.etf-more-btn[aria-expanded="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
+tr.detail-row>td{padding:0;background:#FCFCF9;border-bottom:1px solid var(--line)}
+tr.detail-row:hover>td{background:#FCFCF9}
+.detail{
+  /* La fiche est du texte, pas du tableau : on l'épingle à la zone visible du
+     conteneur pour qu'elle se lise sans défilement horizontal, alors que la
+     table, elle, reste plus large que l'écran sur mobile. */
+  position:sticky;left:0;
+  width:min(1060px, calc(100vw - 42px));
+  padding:26px 16px 28px;
+  /* palette catégorielle validée (CVD + contraste, surface #FCFCF9) */
+  --s1:#2a78d6;--s2:#eb6834;--s3:#1baf7a;--s4:#eda100;
+  --s5:#e87ba4;--s6:#008300;--s7:#4a3aa7;
+  /* gris neutre : ce n'est pas une catégorie, c'est ce que la source ne dit pas */
+  --viz-nc:#C7C6BF;
+}
+.detail-flag{
+  display:flex;gap:10px;align-items:flex-start;
+  border:1px solid var(--line);border-left:3px solid var(--amber);background:var(--amber-soft);
+  border-radius:0 10px 10px 0;padding:12px 16px;font-size:.83rem;color:var(--ink-soft);
+  max-width:900px;margin-bottom:22px;
+}
+.detail-flag strong{color:var(--ink)}
+.detail-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:30px}
+.detail-grid>section{min-width:0;max-width:560px}
+.detail h4{
+  font-size:.72rem;text-transform:uppercase;letter-spacing:.09em;font-family:var(--mono);
+  color:var(--red);margin-bottom:4px;
+}
+.detail .h4-sub{font-size:.8rem;color:var(--ink-faint);margin-bottom:14px}
+
+/* barres de lignes détenues — encodage séquentiel, une seule teinte */
+.hold{display:grid;gap:9px;margin:0;list-style:none}
+.hold li{display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:baseline}
+.hold .hn{font-size:.83rem;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hold .hp{font-family:var(--mono);font-size:.78rem;color:var(--ink-soft);font-variant-numeric:tabular-nums}
+.hold .hbar{grid-column:1/-1;height:6px;background:#EDEEE8;border-radius:0 3px 3px 0}
+.hold .hbar span{display:block;height:100%;background:#2a78d6;border-radius:0 3px 3px 0}
+
+/* barre empilée 100 % — part-au-tout */
+.stack{display:flex;gap:2px;height:22px;border-radius:4px;overflow:hidden;margin-bottom:14px}
+.stack .seg{min-width:3px;border-radius:2px}
+.legend{list-style:none;display:grid;gap:7px;margin:0}
+.legend li{display:flex;align-items:baseline;gap:9px;font-size:.83rem}
+.legend i{width:10px;height:10px;border-radius:2px;flex-shrink:0;transform:translateY(1px)}
+.legend .lg-n{color:var(--ink)}
+.legend .lg-p{margin-left:auto;font-family:var(--mono);font-size:.78rem;color:var(--ink-soft);font-variant-numeric:tabular-nums}
+.detail-note{margin-top:12px;font-size:.76rem;color:var(--ink-faint);line-height:1.6}
+.detail-src{
+  margin-top:24px;padding-top:14px;border-top:1px dashed var(--line);
+  font-size:.76rem;color:var(--ink-faint);
+}
+.detail-src a{color:var(--ink-soft)}
+.detail-empty{font-size:.85rem;color:var(--ink-soft);max-width:70ch}
+
+@media (max-width:640px){
+  .detail{padding:20px 12px 24px}
+  .detail-grid{gap:24px}
+  .hero{padding:56px 0 64px}
+  .hero::before{left:16px}
+  .modal{padding:26px 22px 28px}
+  .modal h3{font-size:1.3rem}
+  .p-zero{font-size:4.2rem}
+  .promesses{padding:48px 0 52px}
+  .hero-zeros span{font-size:.86rem;padding:8px 16px 8px 12px}
+  .filtres{gap:14px}
+  .filtre-reset{margin-left:0}
+  .sondage{padding:24px 20px}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-name">Boussole</span>
+      <span class="brand-tag">prototype</span>
+    </div>
+    <nav class="nav" aria-label="Sections">
+      <button data-page="accueil" aria-current="true">Accueil</button>
+      <button data-page="comprendre">Comprendre</button>
+      <button data-page="profils">Profils types</button>
+      <button data-page="etf">Comparer les ETF</button>
+      <button data-page="durable">Investir durable</button>
+      <button data-page="courtiers">Comparer les courtiers</button>
+      <button data-page="action">Passer à l'action</button>
+    </nav>
+  </div>
+</header>
+
+<!-- ===================== ACCUEIL ===================== -->
+<main>
+<section class="page active" id="page-accueil">
+  <div class="hero">
+    <div class="wrap">
+      <div class="hero-kicker">
+        <span>Investir sans se faire vendre quoi que ce soit</span>
+        <span class="chip fresh">✓ À jour fiscalité 2026</span>
+      </div>
+      <h1>Vous n'avez pas besoin qu'on choisisse <span class="souligne">à votre place<svg viewBox="0 0 100 10" preserveAspectRatio="none" aria-hidden="true"><path d="M2,7 C20,3 45,8 62,5 C78,2.5 92,6 98,4"/></svg></span>.</h1>
+      <p class="hero-sub">
+        Vous avez de l'argent de côté, et tout ce que vous lisez vous décourage : des comparatifs
+        sponsorisés, des courtiers qui vantent leurs produits, du jargon partout.
+        Ici, c'est différent&nbsp;: <strong>on explique, on compare, et c'est vous qui décidez</strong>.
+        On ne vend aucun produit financier et on ne touche aucune commission — c'est le principe.
+      </p>
+      <div class="hero-cta">
+        <button class="btn btn-primary" data-goto="comprendre">Commencer par comprendre</button>
+        <button class="btn btn-ghost" data-goto="action">Voir les étapes du parcours</button>
+      </div>
+      <div class="hero-zeros" role="list">
+        <span role="listitem"><b>0</b> produit vendu</span>
+        <span role="listitem"><b>0</b> commission touchée</span>
+        <span role="listitem"><b>0</b> conseil personnalisé</span>
+      </div>
+    </div>
+  </div>
+  <div class="promesses">
+    <div class="wrap">
+      <p class="eyebrow">Notre modèle tient en trois zéros</p>
+      <h2>Ce qu'on ne fera jamais — et ce que ça change pour vous.</h2>
+      <div class="promesses-grid">
+
+        <article class="promesse">
+          <div class="p-zero" aria-hidden="true">0</div>
+          <h3>produit vendu</h3>
+          <p class="p-quoi">Nous ne distribuons ni compte-titres, ni <button type="button" class="terme" data-t="pea">PEA</button>,
+          ni assurance-vie, ni <button type="button" class="terme" data-t="etf">ETF</button> « maison ».
+          Nous n'avons strictement rien à vous placer.</p>
+          <p class="p-donc"><i>Ce que ça change pour vous</i>
+          Personne ici n'a intérêt à ce que vous ouvriez tel produit plutôt qu'un autre.
+          Quand une enveloppe ne vous convient pas, on vous le dit.</p>
+        </article>
+
+        <article class="promesse">
+          <div class="p-zero" aria-hidden="true">0</div>
+          <h3>commission touchée</h3>
+          <p class="p-quoi">Aucun lien d'affiliation, aucun apport d'affaires, aucun partenariat rémunéré
+          avec les courtiers, les banques ou les émetteurs que vous voyez comparés ici.</p>
+          <p class="p-donc"><i>Ce que ça change pour vous</i>
+          Le classement des comparateurs ne peut pas être acheté. Le courtier le moins cher reste
+          le moins cher, même s'il ne nous rapporte rien.</p>
+        </article>
+
+        <article class="promesse">
+          <div class="p-zero" aria-hidden="true">0</div>
+          <h3>conseil personnalisé</h3>
+          <p class="p-quoi">Pas de questionnaire qui débouche sur « votre » allocation, pas d'algorithme
+          qui décide à votre place. De la pédagogie, des comparateurs, des outils.</p>
+          <p class="p-donc"><i>Ce que ça change pour vous</i>
+          Vous gardez la décision — et donc le contrôle. Personne ne peut vous orienter
+          vers un produit sous couvert de « recommandation ».</p>
+        </article>
+
+      </div>
+      <p class="promesses-pied">
+        Un comparateur qui touche une commission n'est pas un comparateur, c'est une vitrine.
+        <strong>C'est la seule raison pour laquelle ce site existe.</strong>
+      </p>
+    </div>
+  </div>
+  <div class="wrap section-pad">
+    <p class="eyebrow">Le parcours</p>
+    <h2>Cinq étapes, dans l'ordre que vous voulez.</h2>
+    <p class="section-intro">
+      Comprendre les <strong>enveloppes</strong> (là où on loge ses investissements), regarder des
+      <strong>profils types</strong> présentés à titre pédagogique, comparer les
+      <strong>supports</strong> et les <strong>courtiers</strong> selon vos propres critères,
+      voir ce que recouvre l'<strong>investissement durable</strong> si le sujet vous parle,
+      puis passer à l'action — vous-même, chez le courtier de votre choix.
+    </p>
+    <div class="suite">
+      <button data-goto="comprendre">Étape 1 · Comprendre les enveloppes ⟶</button>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== COMPRENDRE ===================== -->
+<section class="page" id="page-comprendre">
+  <div class="wrap section-pad">
+    <p class="eyebrow">Comprendre · Les enveloppes</p>
+    <h2>Avant de choisir « quoi acheter », on choisit « où le loger ».</h2>
+    <p class="section-intro">
+      En France, on n'achète pas des <button type="button" class="terme fiche" data-t="action">actions</button>
+      ou des <button type="button" class="terme fiche" data-t="etf">ETF</button> « dans le vide » : on les loge dans une
+      <strong>enveloppe</strong>, et c'est elle qui détermine la fiscalité. Il en existe trois principales.
+      Aucune n'est « la meilleure » dans l'absolu — chacune répond à des usages différents.
+    </p>
+    <p class="section-intro" style="margin-top:12px;font-size:.9rem;color:var(--ink-faint)">
+      Les mots <button type="button" class="terme" data-t="soulignes">soulignés en pointillé</button> ouvrent
+      une définition au survol. Ceux en <button type="button" class="terme fiche" data-t="soulignes">trait plein</button>
+      ouvrent une fiche complète. Et les trois cartes ci-dessous <strong>se retournent</strong> quand on clique dessus.
+    </p>
+
+    <div class="env-grid">
+
+      <article class="flip" data-env="pea" tabindex="0" role="button" aria-pressed="false" aria-label="Carte PEA — cliquer pour voir un exemple concret">
+        <div class="flip-inner">
+          <div class="face face-front">
+            <div class="env-head"><h3>Le PEA</h3><span class="env-abbr">Plan d'épargne en actions</span></div>
+            <p class="env-oneliner">L'enveloppe fiscalement avantageuse pour les
+              <button type="button" class="terme fiche" data-t="action">actions</button> et
+              <button type="button" class="terme fiche" data-t="etf">ETF</button> européens
+              (et certains ETF monde éligibles), si vous laissez le temps au temps.</p>
+            <dl class="env-facts">
+              <div class="fact"><dt>Plafond de versements</dt><dd>150 000 €</dd></div>
+              <div class="fact"><dt>Supports possibles</dt><dd>Actions / ETF éligibles UE</dd></div>
+              <div class="fact"><dt>Avant 5 ans (retrait)</dt><dd><span class="moins">31,4 % sur les gains</span></dd></div>
+              <div class="fact"><dt>Après 5 ans</dt><dd><span class="plus">0 % d'impôt</span> + 18,6 % de <button type="button" class="terme" data-t="ps">prél. sociaux</button></dd></div>
+            </dl>
+            <p class="flip-hint">Voir un exemple chiffré</p>
+          </div>
+          <div class="face face-back">
+            <h3>Le PEA, concrètement</h3>
+            <div class="cas">
+              <b>Exemple</b>
+              <p>Camille ouvre un PEA en 2026 et y verse 200 € par mois sur un ETF monde éligible.
+              Sept ans plus tard, elle a versé 16 800 € et son plan en vaut 22 000 €.</p>
+              <p>Elle retire 5 000 €. Le plan a plus de 5 ans : la part de gain contenue dans ce retrait
+              <span class="plus">échappe à l'impôt sur le revenu</span>, seuls les 18,6 % de prélèvements
+              sociaux s'appliquent dessus. <strong>Et le plan reste ouvert</strong> : elle peut continuer à verser.</p>
+              <p>Le même retrait fait au bout de 3 ans aurait <span class="moins">entraîné la clôture du plan</span>
+              et une taxation des gains à 31,4 %.</p>
+            </div>
+            <ul>
+              <li>Un retrait avant 5 ans entraîne en général la clôture du plan.</li>
+              <li>Des ETF « monde » ou « S&amp;P&nbsp;500 » spécialement conçus pour le PEA existent : ils
+                répliquent des indices non européens tout en restant éligibles (voir la
+                <button type="button" class="terme fiche" data-t="synthetique">réplication synthétique</button>).</li>
+              <li>Chez un courtier français, <span class="plus">aucun formulaire de plus-values à remplir</span>
+                chaque année tant que vous ne retirez pas.</li>
+            </ul>
+            <p class="flip-hint">Revenir au recto</p>
+          </div>
+        </div>
+      </article>
+
+      <article class="flip" data-env="cto" tabindex="0" role="button" aria-pressed="false" aria-label="Carte CTO — cliquer pour voir un exemple concret">
+        <div class="flip-inner">
+          <div class="face face-front">
+            <div class="env-head"><h3>Le CTO</h3><span class="env-abbr">Compte-titres ordinaire</span></div>
+            <p class="env-oneliner"><span class="plus">La liberté totale</span> : tous les instruments,
+              tous les marchés, sans plafond — mais la fiscalité s'applique au fil de l'eau.</p>
+            <dl class="env-facts">
+              <div class="fact"><dt>Plafond</dt><dd><span class="plus">Aucun</span></dd></div>
+              <div class="fact"><dt>Supports possibles</dt><dd><span class="plus">Tout (monde entier)</span></dd></div>
+              <div class="fact"><dt>Gains &amp; dividendes</dt><dd><span class="moins">31,4 %</span> (<button type="button" class="terme" data-t="flattax">flat tax</button> 2026)</dd></div>
+              <div class="fact"><dt>Option barème</dt><dd>Possible si avantageux</dd></div>
+            </dl>
+            <p class="flip-hint">Voir un exemple chiffré</p>
+          </div>
+          <div class="face face-back">
+            <h3>Le CTO, concrètement</h3>
+            <div class="cas">
+              <b>Exemple</b>
+              <p>Marc a acheté 100 actions à 40 € (4 000 €). Il en revend 50 à 70 €, soit 3 500 € encaissés.
+              Le prix d'achat de ces 50 titres était de 2 000 € : son gain imposable est de
+              <strong>1 500 €</strong>.</p>
+              <p>Flat tax à 31,4 % → <span class="moins">471 € d'impôt</span>, dus l'année suivante —
+              <strong>même s'il réinvestit immédiatement</strong> les 3 500 €. C'est toute la différence
+              avec le PEA, où rien n'est dû tant qu'on ne retire pas.</p>
+              <p>Chez un courtier français, ce calcul arrive pré-rempli. Chez un courtier étranger sans
+              récapitulatif fiscal, <span class="moins">c'est à Marc de le faire</span> : prix moyen pondéré,
+              formulaire 2074-CMV, et déclaration du compte à l'étranger.</p>
+            </div>
+            <ul>
+              <li>Chaque vente avec gain est imposable l'année où elle a lieu, même en cas de réinvestissement.</li>
+              <li>Chez un courtier français, l'<button type="button" class="terme" data-t="ifu">IFU</button>
+                pré-remplit votre déclaration. Chez certains courtiers étrangers, c'est à vous de calculer
+                (<button type="button" class="terme" data-t="f2074">2074-CMV</button>,
+                <button type="button" class="terme" data-t="f3916">3916</button>) — voir l'onglet Courtiers.</li>
+              <li>La flat tax se décompose en 12,8 % d'impôt + 18,6 % de
+                <button type="button" class="terme" data-t="ps">prélèvements sociaux</button>.</li>
+            </ul>
+            <p class="flip-hint">Revenir au recto</p>
+          </div>
+        </div>
+      </article>
+
+      <article class="flip" data-env="av" tabindex="0" role="button" aria-pressed="false" aria-label="Carte assurance-vie — cliquer pour voir un exemple concret">
+        <div class="flip-inner">
+          <div class="face face-front">
+            <div class="env-head"><h3>L'assurance-vie</h3><span class="env-abbr">AV</span></div>
+            <p class="env-oneliner">Le couteau suisse de l'épargne :
+              <button type="button" class="terme" data-t="fondseuros">fonds euros</button> et supports investis
+              au même endroit, <span class="plus">fiscalité qui s'adoucit après 8 ans</span>, atout pour la transmission.</p>
+            <dl class="env-facts">
+              <div class="fact"><dt>Plafond</dt><dd><span class="plus">Aucun</span></dd></div>
+              <div class="fact"><dt>Supports possibles</dt><dd>Fonds euros + <button type="button" class="terme" data-t="uc">unités de compte</button></dd></div>
+              <div class="fact"><dt>Après 8 ans (retrait)</dt><dd><span class="plus">Abattement 4 600 € / 9 200 €</span></dd></div>
+              <div class="fact"><dt>Prél. sociaux sur gains</dt><dd>18,6 %</dd></div>
+            </dl>
+            <p class="flip-hint">Voir un exemple chiffré</p>
+          </div>
+          <div class="face face-back">
+            <h3>L'assurance-vie, concrètement</h3>
+            <div class="cas">
+              <b>Exemple</b>
+              <p>Sophie a ouvert son contrat en 2018. En 2026, il a donc 8 ans. Elle a versé 30 000 €,
+              le contrat en vaut 39 000 € — soit 9 000 € de gains, ce qui représente 23 % de sa valeur.</p>
+              <p>Elle retire 10 000 €. Seule la part de gain de ce retrait est imposable, soit environ
+              <strong>2 300 €</strong>. Comme le contrat a plus de 8 ans, l'abattement annuel de 4 600 €
+              (personne seule) <span class="plus">absorbe entièrement cette part</span> : pas d'impôt sur le
+              revenu, seulement les 18,6 % de prélèvements sociaux.</p>
+              <p>Le même retrait sur un contrat de 3 ans aurait été taxé <span class="moins">à 31,4 %</span>
+              sur la part de gain.</p>
+            </div>
+            <ul>
+              <li>L'abattement annuel après 8 ans porte sur les gains retirés : 4 600 € seul, 9 200 € en couple.</li>
+              <li><span class="moins">Les frais varient énormément</span> d'un contrat à l'autre (versement,
+                gestion, arbitrage) : c'est le premier critère à comparer.</li>
+              <li>En cas de décès, les capitaux transmis relèvent d'un cadre spécifique, souvent
+                <span class="plus">plus favorable que la succession classique</span>.</li>
+            </ul>
+            <p class="flip-hint">Revenir au recto</p>
+          </div>
+        </div>
+      </article>
+
+    </div>
+
+    <div class="fisc-banner">
+      <h4><span class="chip fresh">✓ Mis à jour</span> Ce qui a changé au 1ᵉʳ janvier 2026</h4>
+      <p>
+        La <button type="button" class="terme" data-t="flattax">flat tax</button> est passée de 30 % à
+        <span class="num">31,4 %</span> : la <button type="button" class="terme" data-t="csg">CSG</button>
+        sur les revenus du capital a augmenté (loi de financement de la Sécurité sociale 2026), portant les
+        <button type="button" class="terme" data-t="ps">prélèvements sociaux</button> de 17,2 % à
+        <span class="num">18,6 %</span>. Beaucoup de sites affichent encore les
+        anciens taux. Quelques produits conservent l'ancien taux par dérogation — au moindre doute,
+        vérifiez sur le site officiel de l'administration fiscale.
+      </p>
+    </div>
+
+    <div class="notice">
+      <strong>À lire.</strong> Ces fiches sont un contenu pédagogique général : elles décrivent le
+      fonctionnement des enveloppes, pas ce que <em>vous</em> devriez faire. Le choix d'ouvrir l'une,
+      l'autre ou plusieurs vous appartient entièrement.
+    </div>
+
+    <div class="suite">
+      <button data-goto="profils">Étape 2 · Regarder les profils types ⟶</button>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== PROFILS ===================== -->
+<section class="page" id="page-profils">
+  <div class="wrap section-pad">
+    <p class="eyebrow">Profils types · Pédagogie</p>
+    <h2>Quatre façons classiques d'aborder l'investissement.</h2>
+    <p class="section-intro">
+      Voici comment des profils d'investisseurs <strong>types</strong> sont généralement construits,
+      présentés à titre éducatif. Personne ne vous classe et aucun questionnaire ne vous « attribue »
+      un résultat&nbsp;: <strong>lisez les quatre</strong>, et si l'un vous ressemble, c'est vous seul·e
+      qui en décidez. Aucun ne constitue une recommandation.
+    </p>
+    <p class="section-intro" style="margin-top:14px">
+      Les barres colorées répartissent le portefeuille entre trois grandes familles :
+      les <button type="button" class="terme fiche" data-t="action">actions</button> (on devient
+      copropriétaire d'entreprises), les <button type="button" class="terme fiche" data-t="obligation">obligations</button>
+      (on prête de l'argent contre un intérêt) et les
+      <button type="button" class="terme" data-t="liquidites">liquidités</button> (l'argent qui dort, disponible).
+      Plus la part d'actions est élevée, plus le rendement espéré à long terme est fort —
+      et plus les baisses de court terme sont violentes.
+    </p>
+
+    <div class="profil-grid">
+      <article class="profil-card" data-profil="prudent">
+        <h3>Le prudent</h3>
+        <div class="profil-traits">
+          <div class="trait"><span>Horizon typique</span><span>&lt; 3 ans</span></div>
+          <div class="trait"><span>Tolérance aux baisses</span><span>Très faible</span></div>
+          <div class="trait"><span>Priorité</span><span>Ne rien perdre</span></div>
+        </div>
+        <div>
+          <div class="alloc" role="img" aria-label="Répartition illustrative : 10 % actions, 20 % obligations, 70 % liquidités">
+            <div class="a-act" style="width:10%"></div><div class="a-obl" style="width:20%"></div><div class="a-liq" style="width:70%"></div>
+          </div>
+          <div class="alloc-legende" style="margin-top:9px">
+            <span><i class="a-act"></i>Actions <b>10&nbsp;%</b></span><span><i class="a-obl"></i>Obligations <b>20&nbsp;%</b></span><span><i class="a-liq"></i>Liquidités <b>70&nbsp;%</b></span>
+          </div>
+        </div>
+        <p class="profil-questions"><em>À se demander :</em> ai-je besoin de cet argent bientôt ? Est-ce que je dormirais mal si mon solde baissait de 10 % ?</p>
+        <button class="profil-self">Ce profil me ressemble</button>
+      </article>
+
+      <article class="profil-card" data-profil="serein">
+        <h3>Le long terme serein</h3>
+        <div class="profil-traits">
+          <div class="trait"><span>Horizon typique</span><span>&gt; 10 ans</span></div>
+          <div class="trait"><span>Tolérance aux baisses</span><span>Moyenne</span></div>
+          <div class="trait"><span>Priorité</span><span>Simplicité + régularité</span></div>
+        </div>
+        <div>
+          <div class="alloc" role="img" aria-label="Répartition illustrative : 70 % actions, 20 % obligations, 10 % liquidités">
+            <div class="a-act" style="width:70%"></div><div class="a-obl" style="width:20%"></div><div class="a-liq" style="width:10%"></div>
+          </div>
+          <div class="alloc-legende" style="margin-top:9px">
+            <span><i class="a-act"></i>Actions <b>70&nbsp;%</b></span><span><i class="a-obl"></i>Obligations <b>20&nbsp;%</b></span><span><i class="a-liq"></i>Liquidités <b>10&nbsp;%</b></span>
+          </div>
+        </div>
+        <p class="profil-questions"><em>À se demander :</em> suis-je capable de verser tous les mois sans regarder les cours ? Mon épargne de précaution est-elle déjà en place ?</p>
+        <button class="profil-self">Ce profil me ressemble</button>
+      </article>
+
+      <article class="profil-card" data-profil="equilibre">
+        <h3>L'équilibré</h3>
+        <div class="profil-traits">
+          <div class="trait"><span>Horizon typique</span><span>5 – 10 ans</span></div>
+          <div class="trait"><span>Tolérance aux baisses</span><span>Modérée</span></div>
+          <div class="trait"><span>Priorité</span><span>Croissance mesurée</span></div>
+        </div>
+        <div>
+          <div class="alloc" role="img" aria-label="Répartition illustrative : 50 % actions, 35 % obligations, 15 % liquidités">
+            <div class="a-act" style="width:50%"></div><div class="a-obl" style="width:35%"></div><div class="a-liq" style="width:15%"></div>
+          </div>
+          <div class="alloc-legende" style="margin-top:9px">
+            <span><i class="a-act"></i>Actions <b>50&nbsp;%</b></span><span><i class="a-obl"></i>Obligations <b>35&nbsp;%</b></span><span><i class="a-liq"></i>Liquidités <b>15&nbsp;%</b></span>
+          </div>
+        </div>
+        <p class="profil-questions"><em>À se demander :</em> ai-je un projet à moyen terme (apport immobilier, congé long) qui fixe mon horizon ?</p>
+        <button class="profil-self">Ce profil me ressemble</button>
+      </article>
+
+      <article class="profil-card" data-profil="dynamique">
+        <h3>L'autonome dynamique</h3>
+        <div class="profil-traits">
+          <div class="trait"><span>Horizon typique</span><span>&gt; 15 ans</span></div>
+          <div class="trait"><span>Tolérance aux baisses</span><span>Élevée</span></div>
+          <div class="trait"><span>Priorité</span><span>Performance long terme</span></div>
+        </div>
+        <div>
+          <div class="alloc" role="img" aria-label="Répartition illustrative : 90 % actions, 5 % obligations, 5 % liquidités">
+            <div class="a-act" style="width:90%"></div><div class="a-obl" style="width:5%"></div><div class="a-liq" style="width:5%"></div>
+          </div>
+          <div class="alloc-legende" style="margin-top:9px">
+            <span><i class="a-act"></i>Actions <b>90&nbsp;%</b></span><span><i class="a-obl"></i>Obligations <b>5&nbsp;%</b></span><span><i class="a-liq"></i>Liquidités <b>5&nbsp;%</b></span>
+          </div>
+        </div>
+        <p class="profil-questions"><em>À se demander :</em> ai-je déjà traversé une baisse de 30 % sans vendre ? Est-ce que je confonds tolérance au risque et optimisme ?</p>
+        <button class="profil-self">Ce profil me ressemble</button>
+      </article>
+    </div>
+
+    <div class="notice">
+      <strong>Important.</strong> Ces répartitions sont des illustrations pédagogiques de profils
+      génériques, pas des recommandations d'investissement — et encore moins <em>votre</em> allocation.
+      Votre situation réelle (revenus, dettes, projets, famille) peut appeler des choix très différents.
+      Pour une recommandation personnalisée, seul un conseiller régulé (CIF) est habilité.
+    </div>
+
+    <div class="suite">
+      <button data-goto="etf">Étape 3 · Comparer les ETF selon vos critères ⟶</button>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== ETF ===================== -->
+<section class="page" id="page-etf">
+  <div class="wrap section-pad">
+    <p class="eyebrow">Comparer · Les ETF</p>
+    <h2>Le comparateur, c'est vous qui le pilotez.</h2>
+    <p class="section-intro">
+      Un <button type="button" class="terme fiche" data-t="etf">ETF</button> réplique un
+      <button type="button" class="terme" data-t="indice">indice</button> (par exemple « les 500 plus
+      grandes entreprises américaines ») pour des <button type="button" class="terme" data-t="ter">frais</button>
+      réduits. Filtrez ci-dessous selon <strong>vos propres critères</strong>, et choisissez les colonnes
+      que vous voulez voir. Aucun tri « recommandé pour vous » : l'ordre affiché ne dépend que de vos choix.
+    </p>
+
+    <div class="filtres" id="filtres-etf">
+      <div class="filtre">
+        <label for="f-zone">Zone géographique</label>
+        <select id="f-zone">
+          <option value="">Toutes</option>
+          <option value="Monde">Monde</option>
+          <option value="USA">USA</option>
+          <option value="Europe">Europe</option>
+          <option value="Émergents">Émergents</option>
+          <option value="Obligations">Obligations</option>
+        </select>
+      </div>
+      <div class="filtre">
+        <label for="f-frais">Frais annuels max</label>
+        <div class="filtre-range">
+          <input type="range" id="f-frais" min="0.05" max="0.60" step="0.05" value="0.60">
+          <output for="f-frais" id="f-frais-out">0,60 %</output>
+        </div>
+      </div>
+      <div class="filtre">
+        <label for="f-dist">Dividendes</label>
+        <select id="f-dist">
+          <option value="">Indifférent</option>
+          <option value="Capitalisant">Réinvestis (capitalisant)</option>
+          <option value="Distribuant">Versés (distribuant)</option>
+        </select>
+      </div>
+      <div class="filtre">
+        <label for="f-tri">Trier par</label>
+        <select id="f-tri">
+          <option value="">Ordre de la liste</option>
+          <option value="frais:1">Frais — du plus bas au plus haut</option>
+          <option value="frais:-1">Frais — du plus haut au plus bas</option>
+          <option value="encours:-1">Encours — du plus gros au plus petit</option>
+          <option value="encours:1">Encours — du plus petit au plus gros</option>
+          <option value="nom:1">Nom — A → Z</option>
+        </select>
+      </div>
+      <label class="filtre-check"><input type="checkbox" id="f-pea"> Éligible PEA</label>
+      <label class="filtre-check"><input type="checkbox" id="f-esg"> Filtre durable</label>
+      <button class="filtre-reset" id="f-reset">Réinitialiser mes critères</button>
+    </div>
+
+    <details class="colonnes" id="colonnes">
+      <summary>Colonnes affichées <span id="col-compte"></span></summary>
+      <div class="col-list" id="col-list"></div>
+    </details>
+
+    <p class="compteur"><strong id="etf-count">0</strong> ETF correspondent à vos critères ·
+      « En savoir plus » ouvre la composition réelle du fonds<span id="hint-scroll" style="display:none"> ·
+      le tableau défile horizontalement</span></p>
+
+    <div class="table-scroll">
+      <table id="table-etf">
+        <thead id="etf-head"></thead>
+        <tbody id="etf-body"></tbody>
+      </table>
+      <div class="vide" id="etf-vide" style="display:none">Aucun ETF ne correspond à ces critères. Élargissez un filtre pour voir plus de résultats.</div>
+    </div>
+
+    <div class="notice">
+      <strong>Données indicatives</strong> relevées en juillet 2026 auprès des documents des émetteurs ;
+      frais et encours évoluent. Vérifiez toujours le DIC (document d'informations clés) sur le site de
+      l'émetteur avant tout achat. Ce comparateur est un outil de tri factuel, pas une sélection
+      recommandée : les performances passées ne préjugent pas des performances futures.
+    </div>
+
+    <div class="notice green">
+      <strong>D'où viennent les compositions.</strong> Chaque fiche « En savoir plus » reprend
+      l'inventaire publié par l'émetteur, tel que relevé sur le profil justETF de l'ETF, avec sa date
+      d'arrêté propre (fin mai 2026 pour la plupart) et un lien vers la source. Aucun pourcentage n'est
+      estimé ni recalculé. Les ETF <strong>à réplication synthétique</strong> ne publient pas
+      d'inventaire exploitable : pour eux, on affiche l'exposition de l'indice suivi, mesurée sur un ETF
+      physique répliquant le même indice — c'est signalé en tête de fiche à chaque fois.
+    </div>
+
+    <div class="notice amber">
+      <strong>Deux corrections, juillet 2026.</strong> La ligne « Amundi PEA MSCI Émergents » renvoyait
+      à un ISIN qui est en réalité celui du fonds <em>Emergent EMEA</em> (Europe, Moyen-Orient, Afrique
+      seulement). Elle pointe désormais vers le bon fonds (FR0013412020), dont les frais réels sont de
+      0,30 % et non 0,55 %, et qui suit un indice filtré ESG. La ligne « C73 » désignait un fonds absorbé
+      en 2024 ; elle renvoie maintenant à <em>Amundi Euro Government Bond 7-10Y</em> (LU1287023185),
+      frais 0,15 %.
+    </div>
+
+    <div class="suite">
+      <button data-goto="durable">Étape 4 · Investir durable, si le sujet vous parle ⟶</button>
+    </div>
+  </div>
+</section>
+
+
+<!-- ===================== INVESTIR DURABLE ===================== -->
+<section class="page" id="page-durable">
+  <div class="wrap section-pad">
+    <p class="eyebrow">Comparer · Investir durable</p>
+    <h2>Investir selon ses valeurs, sans se raconter d'histoires.</h2>
+    <p class="section-intro">
+      Beaucoup de gens veulent éviter que leur épargne finance le charbon, le tabac ou l'armement.
+      C'est un choix parfaitement légitime — et personne d'autre que vous ne peut le faire à votre place.
+      Le problème n'est pas l'intention, c'est le <strong>vocabulaire</strong> : ESG, ISR, SRI, PAB, CTB,
+      « article 8 »… autant d'étiquettes qui ne promettent pas du tout la même chose. Voici de quoi les lire.
+    </p>
+
+    <p class="eyebrow" style="margin-top:48px">Trois façons de filtrer un portefeuille</p>
+    <div class="approche-grid">
+      <article class="approche">
+        <p class="num">Méthode 1</p>
+        <h3>L'exclusion</h3>
+        <p>On retire de l'indice les entreprises dont l'activité pose problème : charbon, armes
+        controversées, tabac, parfois nucléaire ou pétrole. Simple à comprendre, simple à vérifier.</p>
+        <p class="ex">Le fonds reste très proche de l'indice d'origine. On enlève quelques lignes, on ne
+        change pas la nature du placement.</p>
+      </article>
+      <article class="approche">
+        <p class="num">Méthode 2</p>
+        <h3>La sélection</h3>
+        <p>On garde, dans chaque secteur, les entreprises les mieux notées sur des critères
+        environnementaux, sociaux et de gouvernance. Un pétrolier « moins pire » que ses concurrents
+        peut donc rester dans le fonds.</p>
+        <p class="ex">C'est l'approche la plus répandue — et la plus contre-intuitive pour un épargnant
+        qui pensait avoir tout exclu.</p>
+      </article>
+      <article class="approche">
+        <p class="num">Méthode 3</p>
+        <h3>La trajectoire climat</h3>
+        <p>On construit l'indice pour qu'il soit compatible avec l'Accord de Paris : baisse programmée
+        de l'intensité carbone année après année. Ce sont les indices
+        <button type="button" class="terme" data-t="pab">PAB</button> et
+        <button type="button" class="terme" data-t="ctb">CTB</button>, définis par le droit européen.</p>
+        <p class="ex">Le seul cas où le cahier des charges est fixé par un règlement, et pas par
+        l'émetteur du fonds.</p>
+      </article>
+    </div>
+
+    <p class="eyebrow" style="margin-top:52px">Les étiquettes que vous allez croiser</p>
+    <p class="section-intro">
+      Le point important est la troisième colonne : <strong>ce que l'étiquette ne garantit pas</strong>.
+      C'est là que se logent la plupart des déceptions.
+    </p>
+    <div class="table-scroll" style="margin-top:22px">
+      <table class="etiq">
+        <thead>
+          <tr><th>Étiquette</th><th>Ce que ça veut dire</th><th>Ce que ça ne garantit pas</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="nom">Label ISR<small>Label d'État français</small></td>
+            <td>Refondu récemment : exclusion des énergies fossiles non conventionnelles et du charbon,
+              sélectivité portée de 20 % à 30 % (on écarte les 30 % les moins bien notés de chaque secteur),
+              et depuis 2026 une part croissante du portefeuille doit être investie dans des entreprises
+              à plan de transition aligné sur l'Accord de Paris.</td>
+            <td>Ce n'est pas un label « climat » exclusif : il reste généraliste. Des fonds ont préféré
+              abandonner le label plutôt que de s'y conformer.</td>
+          </tr>
+          <tr>
+            <td class="nom">Label Greenfin<small>Label d'État français</small></td>
+            <td>Beaucoup plus exigeant et beaucoup plus rare : ciblé sur le financement de la transition
+              écologique, avec des exclusions strictes.</td>
+            <td>Il exclut le nucléaire — un choix contesté, y compris au Parlement. À vous de savoir si ce
+              critère correspond à votre propre position sur le sujet.</td>
+          </tr>
+          <tr>
+            <td class="nom">SFDR article 8<small>Règlement européen</small></td>
+            <td>Le fonds « promeut des caractéristiques environnementales ou sociales ». C'est une
+              obligation de <em>transparence</em> sur ce qu'il fait.</td>
+            <td>Ce n'est <strong>pas un label</strong> et le niveau d'exigence est très variable d'un fonds
+              article 8 à l'autre. C'est la catégorie fourre-tout du marché.</td>
+          </tr>
+          <tr>
+            <td class="nom">SFDR article 9<small>Règlement européen</small></td>
+            <td>Le fonds a un objectif d'investissement durable comme objectif principal. Catégorie
+              nettement plus restrictive.</td>
+            <td>Là encore, transparence ≠ certification par un tiers indépendant.</td>
+          </tr>
+          <tr>
+            <td class="nom">PAB / CTB<small>Indices de référence UE</small></td>
+            <td>Indices climatiques encadrés par le droit européen : réduction immédiate de l'intensité
+              carbone puis trajectoire de baisse annuelle. PAB est plus strict que CTB.</td>
+            <td>Le portefeuille peut rester très concentré sur les mêmes géantes technologiques que
+              l'indice d'origine — décarbonées par nature, mais pas « vertueuses » pour autant.</td>
+          </tr>
+          <tr>
+            <td class="nom">SRI / ESG<small>Nom commercial</small></td>
+            <td>Mention ajoutée par l'émetteur au nom du fonds pour signaler un filtre.</td>
+            <td>Aucune définition légale unique. Deux ETF « ESG » peuvent appliquer des filtres
+              radicalement différents. C'est le nom de l'<em>indice</em> qu'il faut lire, pas celui du fonds.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="notice amber" style="max-width:820px">
+      <strong>Ce qu'aucune étiquette ne vous garantira jamais.</strong>
+      Acheter un ETF ESG en bourse, c'est racheter des actions à un autre investisseur : l'argent ne va pas
+      à l'entreprise. L'effet sur le monde réel passe par le vote en assemblée générale et le coût du
+      capital, pas par votre ordre d'achat. Par ailleurs les agences de notation ESG
+      <strong>se contredisent souvent</strong> sur une même entreprise, et un filtre durable modifie le
+      risque du portefeuille (plus concentré, souvent plus « tech »). Investir durable est un choix de
+      valeurs assumé, pas une garantie de performance — ni dans un sens, ni dans l'autre.
+    </div>
+
+    <p class="eyebrow" style="margin-top:52px">Vérifier par vous-même, en trois gestes</p>
+    <div class="checklist" style="margin-top:20px">
+      <div class="etape">
+        <div class="etape-num">1</div>
+        <div>
+          <h3>Lisez le nom de l'indice, pas celui du fonds</h3>
+          <p>« MSCI World SRI Filtered PAB » et « MSCI World ESG Enhanced Focus » ne sélectionnent pas du
+          tout de la même façon. Le nom de l'indice est le seul élément qui engage vraiment.</p>
+          <span class="qui">Décision : vous</span>
+        </div>
+      </div>
+      <div class="etape">
+        <div class="etape-num">2</div>
+        <div>
+          <h3>Ouvrez la composition réelle</h3>
+          <p>C'est le test qui tranche : si vous trouvez dans les premières lignes une entreprise que vous
+          vouliez éviter, l'étiquette ne correspond pas à ce que vous cherchiez. Le
+          <a href="#" data-goto="etf">comparateur</a> affiche cette composition pour chaque ETF, ligne par ligne.</p>
+          <span class="qui">Décision : vous</span>
+        </div>
+      </div>
+      <div class="etape">
+        <div class="etape-num">3</div>
+        <div>
+          <h3>Comparez les frais avec l'équivalent non filtré</h3>
+          <p>Un filtre durable coûte en général un peu plus cher. Regardez l'écart : quelques centièmes de
+          pourcent, ou le double du fonds classique ? À vous de dire si l'écart vaut ce qu'il achète.</p>
+          <span class="qui">Décision : vous</span>
+        </div>
+      </div>
+    </div>
+
+    <p class="eyebrow" style="margin-top:52px">Les ETF de la liste qui appliquent un filtre durable</p>
+    <p class="section-intro">
+      Extrait automatique du comparateur — ce n'est ni un classement, ni une sélection recommandée,
+      juste la liste des fonds de notre base qui déclarent un filtre, avec la nature de ce filtre.
+    </p>
+    <div class="esg-liste" id="esg-liste"></div>
+
+    <div class="notice">
+      <strong>Choix de valeurs, décision personnelle.</strong> Ce que vous acceptez ou refusez de financer
+      ne relève d'aucune expertise financière : cela vous appartient. Nous décrivons les mécanismes et
+      affichons les compositions ; nous ne dirons jamais qu'un fonds est « meilleur » qu'un autre.
+      Vérifiez le DIC et la méthodologie de l'indice avant tout achat.
+    </div>
+
+    <div class="suite">
+      <button data-goto="courtiers">Étape 5 · Comparer les courtiers ⟶</button>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== COURTIERS ===================== -->
+<section class="page" id="page-courtiers">
+  <div class="wrap section-pad">
+    <p class="eyebrow">Comparer · Les courtiers</p>
+    <h2>Le courtier détermine aussi votre paperasse d'avril.</h2>
+    <p class="section-intro">
+      Deux choses à comparer : les <strong>frais</strong>, bien sûr, mais aussi la
+      <strong>simplicité fiscale</strong>. Un courtier français transmet un récapitulatif (IFU) qui
+      pré-remplit votre déclaration. Un courtier étranger peut vous laisser calculer vous-même vos
+      gains — et vous oblige à déclarer le compte chaque année (formulaire 3916,
+      <strong>1 500 € d'amende par compte oublié</strong>).
+    </p>
+
+    <div class="filtres" id="filtres-courtiers">
+      <label class="filtre-check"><input type="checkbox" id="c-pea"> Propose le PEA</label>
+      <label class="filtre-check"><input type="checkbox" id="c-ifu"> Déclaration pré-remplie (IFU)</label>
+      <label class="filtre-check"><input type="checkbox" id="c-fr"> Compte français (pas de formulaire 3916)</label>
+      <button class="filtre-reset" id="c-reset">Réinitialiser mes critères</button>
+    </div>
+
+    <p class="compteur"><strong id="courtier-count">0</strong> courtiers correspondent à vos critères</p>
+
+    <div class="table-scroll">
+      <table id="table-courtiers">
+        <thead>
+          <tr>
+            <th>Courtier</th>
+            <th>Enveloppes</th>
+            <th>Frais par ordre (indicatif)</th>
+            <th>Déclaration</th>
+            <th>Compte à l'étranger</th>
+            <th>Bon à savoir</th>
+          </tr>
+        </thead>
+        <tbody id="courtier-body"></tbody>
+      </table>
+      <div class="vide" id="courtier-vide" style="display:none">Aucun courtier ne correspond à ces critères.</div>
+    </div>
+
+    <div class="notice">
+      <strong>Aucune affiliation.</strong> Nous ne touchons rien d'aucun courtier de ce tableau, et
+      aucun n'est « recommandé ». Frais indicatifs relevés en juillet 2026 sur les grilles tarifaires
+      publiques (hors offres promotionnelles) ; vérifiez avant d'ouvrir un compte.
+    </div>
+
+    <div class="suite">
+      <button data-goto="action">Dernière étape · Passer à l'action ⟶</button>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== ACTION ===================== -->
+<section class="page" id="page-action">
+  <div class="wrap section-pad">
+    <p class="eyebrow">Passer à l'action</p>
+    <h2>Le parcours complet, fait par vous, à votre rythme.</h2>
+    <p class="section-intro">
+      Voici les étapes génériques d'un premier investissement. Chacune est une décision
+      <strong>que vous prenez vous-même</strong> — c'est plus simple qu'il n'y paraît, et l'ordre compte.
+    </p>
+
+    <div class="checklist">
+      <div class="etape">
+        <div class="etape-num">1</div>
+        <div>
+          <h3>Sécuriser l'épargne de précaution</h3>
+          <p>Avant d'investir le moindre euro : de quoi vivre 3 à 6 mois sur un livret disponible immédiatement. On n'investit que l'argent dont on n'aura pas besoin à court terme.</p>
+          <span class="qui">Décision : vous</span>
+        </div>
+      </div>
+      <div class="etape">
+        <div class="etape-num">2</div>
+        <div>
+          <h3>Choisir votre enveloppe</h3>
+          <p>PEA, CTO, assurance-vie — ou une combinaison. Relisez la section <a href="#" data-goto="comprendre">Comprendre</a> si besoin : le bon choix dépend de votre horizon et de vos projets, que vous êtes seul·e à connaître.</p>
+          <span class="qui">Décision : vous</span>
+        </div>
+      </div>
+      <div class="etape">
+        <div class="etape-num">3</div>
+        <div>
+          <h3>Choisir votre courtier et ouvrir le compte</h3>
+          <p>Comparez selon vos critères (frais, PEA, simplicité fiscale), puis ouvrez le compte directement sur le site du courtier choisi. Comptez 10 à 30 minutes avec une pièce d'identité, un RIB et un justificatif de domicile.</p>
+          <span class="qui">Décision : vous</span>
+        </div>
+      </div>
+      <div class="etape">
+        <div class="etape-num">4</div>
+        <div>
+          <h3>Choisir vos supports</h3>
+          <p>Utilisez le <a href="#" data-goto="etf">comparateur d'ETF</a> avec vos propres filtres. Beaucoup d'investisseurs de long terme privilégient la simplicité : peu de lignes, des frais bas, des indices larges. À vous de voir ce qui correspond à votre profil — celui que vous vous êtes attribué, pas celui qu'on vous aurait collé.</p>
+          <span class="qui">Décision : vous</span>
+        </div>
+      </div>
+      <div class="etape">
+        <div class="etape-num">5</div>
+        <div>
+          <h3>Premier virement, premier achat</h3>
+          <p>Commencez petit si ça vous rassure : le premier ordre de bourse est surtout une étape psychologique. Passez un ordre « au marché » sur le support choisi, et c'est fait.</p>
+          <span class="qui">Décision : vous</span>
+        </div>
+      </div>
+      <div class="etape">
+        <div class="etape-num">6</div>
+        <div>
+          <h3>Automatiser, puis ne plus (trop) regarder</h3>
+          <p>Un virement programmé chaque mois enlève l'émotion de l'équation. Les baisses font partie du trajet ; votre horizon est votre meilleur allié.</p>
+          <span class="qui">Décision : vous</span>
+        </div>
+      </div>
+      <div class="etape">
+        <div class="etape-num">7</div>
+        <div>
+          <h3>Déclarer ce qui doit l'être</h3>
+          <p>Compte à l'étranger → formulaire 3916 chaque année. Ventes avec gains sur CTO → 2074-CMV si votre courtier ne fournit pas d'IFU. C'est la partie que tout le monde déteste — et celle où un bon outil change tout.</p>
+          <span class="qui">Décision : vous · Aide : bientôt ici</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="sondage" id="sondage">
+      <h3>Après ce parcours, vous vous sentez… ?</h3>
+      <p class="sondage-sub">Une seule réponse, en toute franchise. Rien n'est enregistré — ce prototype sert à comprendre ce qui bloque vraiment.</p>
+      <div class="sondage-choix">
+        <button data-rep="oui">« Je sais quoi faire, je peux me lancer seul·e. »</button>
+        <button data-rep="hesite">« C'est plus clair, mais j'hésite encore sur un point précis. »</button>
+        <button data-rep="non">« Honnêtement, je préférerais qu'on choisisse pour moi. »</button>
+      </div>
+      <div class="sondage-reponse v-oui" id="rep-oui">
+        <strong>Parfait — c'est exactement le but.</strong> Tout ce qu'il vous reste à faire se passe
+        chez le courtier que vous choisirez, pas ici. Revenez quand vous voudrez comparer, vérifier un
+        taux, ou — bientôt — générer vos formulaires fiscaux.
+      </div>
+      <div class="sondage-reponse v-hesite" id="rep-hesite">
+        <strong>C'est normal, et c'est une bonne nouvelle :</strong> hésiter sur <em>un point précis</em>,
+        c'est déjà savoir ce qui vous manque. Notez ce point et dites-le nous de vive voix pendant ce
+        test — c'est exactement ce qu'on cherche à découvrir.
+      </div>
+      <div class="sondage-reponse v-non">
+        <strong>Merci pour votre franchise — c'est une réponse précieuse.</strong> Sachez simplement
+        que seuls des professionnels régulés (conseillers en investissements financiers, gestion sous
+        mandat) sont habilités à choisir pour vous, et que ce service a un coût, direct ou indirect.
+        Ici, on ne le fera jamais : c'est notre principe. Dites-nous de vive voix ce qui vous a manqué
+        pour décider seul·e.
+      </div>
+      <button class="sondage-restart" id="sondage-restart" style="display:none">Changer ma réponse</button>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="footer-inner">
+    <p class="footer-legal">
+      <strong>Boussole est un service d'information et de pédagogie financière.</strong> Il ne fournit
+      aucun conseil en investissement personnalisé au sens de la réglementation, ne commercialise aucun
+      produit financier et ne perçoit aucune rémunération d'aucun établissement cité. Les contenus,
+      profils types et comparateurs sont fournis à titre éducatif et factuel ; les décisions
+      d'investissement relèvent de la seule responsabilité de l'utilisateur. Investir comporte des
+      risques de perte en capital. Données fiscales à jour de la loi de financement de la Sécurité
+      sociale 2026 ; données de marché indicatives relevées en juillet 2026.
+    </p>
+    <p class="footer-proto">Prototype de test · aucune donnée n'est collectée ni enregistrée</p>
+  </div>
+</footer>
+
+<div id="tooltip" role="tooltip" aria-hidden="true"></div>
+
+<div class="modal-fond" id="modal-fond" role="dialog" aria-modal="true" aria-labelledby="modal-titre">
+  <div class="modal">
+    <button class="modal-close" id="modal-close" aria-label="Fermer la fiche">&times;</button>
+    <p class="m-kicker" id="modal-kicker">Définition</p>
+    <h3 id="modal-titre"></h3>
+    <div class="modal-body" id="modal-corps"></div>
+  </div>
+</div>
+
+<script>
+/* ---------- DONNÉES ETF (indicatives, juillet 2026) ---------- */
+const ETFS = [
+  {nom:"iShares Core MSCI World", ticker:"IWDA", isin:"IE00B4L5Y983", indice:"MSCI World", zone:"Monde", frais:0.20, encours:95, pea:false, dist:"Capitalisant", repli:"Physique"},
+  {nom:"Vanguard FTSE All-World", ticker:"VWCE", isin:"IE00BK5BQT80", indice:"FTSE All-World", zone:"Monde", frais:0.19, encours:38, pea:false, dist:"Capitalisant", repli:"Physique"},
+  {nom:"Vanguard FTSE All-World (dist.)", ticker:"VWRL", isin:"IE00B3RBWM25", indice:"FTSE All-World", zone:"Monde", frais:0.19, encours:16, pea:false, dist:"Distribuant", repli:"Physique"},
+  {nom:"Amundi Prime All Country World", ticker:"WEBN", isin:"IE0003XJA0J9", indice:"Solactive GBS Global", zone:"Monde", frais:0.07, encours:4, pea:false, dist:"Capitalisant", repli:"Physique"},
+  {nom:"Amundi MSCI World (PEA)", ticker:"CW8", isin:"LU1681043599", indice:"MSCI World", zone:"Monde", frais:0.38, encours:5, pea:true, dist:"Capitalisant", repli:"Synthétique"},
+  {nom:"iShares MSCI World Swap PEA", ticker:"WPEA", isin:"IE0002XZSHO1", indice:"MSCI World", zone:"Monde", frais:0.25, encours:2, pea:true, dist:"Capitalisant", repli:"Synthétique"},
+  {nom:"Amundi PEA Monde", ticker:"EWLD", isin:"FR0011869353", indice:"MSCI World", zone:"Monde", frais:0.45, encours:1, pea:true, dist:"Capitalisant", repli:"Synthétique"},
+  {nom:"iShares Core S&P 500", ticker:"CSPX", isin:"IE00B5BMR087", indice:"S&P 500", zone:"USA", frais:0.07, encours:110, pea:false, dist:"Capitalisant", repli:"Physique"},
+  {nom:"SPDR S&P 500", ticker:"SPYL", isin:"IE000XZSV718", indice:"S&P 500", zone:"USA", frais:0.03, encours:12, pea:false, dist:"Capitalisant", repli:"Physique"},
+  {nom:"Amundi PEA S&P 500", ticker:"PE500", isin:"FR0011871128", indice:"S&P 500", zone:"USA", frais:0.15, encours:2, pea:true, dist:"Capitalisant", repli:"Synthétique"},
+  {nom:"BNP Paribas Easy S&P 500 (PEA)", ticker:"ESE", isin:"FR0011550185", indice:"S&P 500", zone:"USA", frais:0.25, encours:3, pea:true, dist:"Capitalisant", repli:"Synthétique"},
+  {nom:"Amundi PEA Nasdaq-100", ticker:"PANX", isin:"FR0011871110", indice:"Nasdaq-100", zone:"USA", frais:0.30, encours:1, pea:true, dist:"Capitalisant", repli:"Synthétique"},
+  {nom:"Amundi Stoxx Europe 600 (PEA)", ticker:"MEUD", isin:"LU0908500753", indice:"Stoxx Europe 600", zone:"Europe", frais:0.07, encours:8, pea:true, dist:"Capitalisant", repli:"Physique"},
+  {nom:"iShares Core MSCI Europe", ticker:"IMAE", isin:"IE00B4K48X80", indice:"MSCI Europe", zone:"Europe", frais:0.12, encours:9, pea:false, dist:"Capitalisant", repli:"Physique"},
+  {nom:"Amundi CAC 40 (PEA)", ticker:"CACC", isin:"FR0013380607", indice:"CAC 40", zone:"Europe", frais:0.25, encours:2, pea:true, dist:"Capitalisant", repli:"Physique"},
+  {nom:"iShares Core EM IMI", ticker:"EIMI", isin:"IE00BKM4GZ66", indice:"MSCI Emerging Markets IMI", zone:"Émergents", frais:0.18, encours:20, pea:false, dist:"Capitalisant", repli:"Physique"},
+  {nom:"Amundi PEA Emergent ESG Transition", ticker:"PAEEM", isin:"FR0013412020", indice:"MSCI EM ex-Egypt ESG Broad CTB Select", zone:"Émergents", frais:0.30, encours:0.8, pea:true, dist:"Capitalisant", repli:"Synthétique", esg:"Trajectoire climat (CTB) + filtre ESG"},
+  {nom:"iShares Core Global Aggregate Bond (EUR-H)", ticker:"AGGH", isin:"IE00BDBRDM35", indice:"Bloomberg Global Aggregate", zone:"Obligations", frais:0.10, encours:8, pea:false, dist:"Capitalisant", repli:"Physique"},
+  {nom:"Amundi Euro Government Bond 7-10Y", ticker:"EM710", isin:"LU1287023185", indice:"Bloomberg Euro Treasury 50bn 7-10 Year", zone:"Obligations", frais:0.15, encours:1.6, pea:false, dist:"Capitalisant", repli:"Physique"},
+  {nom:"VanEck Morningstar Dev. Dividend", ticker:"TDIV", isin:"NL0011683594", indice:"Sociétés à dividendes (monde dév.)", zone:"Monde", frais:0.38, encours:2, pea:false, dist:"Distribuant", repli:"Physique"},
+
+  /* --- Fonds appliquant un filtre durable (voir l'onglet « Investir durable ») ---
+     Ajoutés en juillet 2026. Leur composition détaillée n'a pas encore été relevée :
+     la fiche renvoie vers la source plutôt que d'afficher des chiffres non vérifiés. */
+  {nom:"iShares MSCI World SRI", ticker:"IWSD", isin:"IE00BYX2JD69", indice:"MSCI World SRI Select Reduced Fossil Fuel", zone:"Monde", frais:0.20, encours:5, pea:false, dist:"Capitalisant", repli:"Physique", esg:"Sélection SRI stricte + exclusions sectorielles larges"},
+  {nom:"iShares MSCI EMU ESG Enhanced CTB", ticker:"EDM4", isin:"IE00BHZPJ015", indice:"MSCI EMU ESG Enhanced Focus CTB", zone:"Europe", frais:0.20, encours:1.5, pea:true, dist:"Capitalisant", repli:"Physique", esg:"Trajectoire climat (CTB), zone euro"},
+  {nom:"Amundi PEA Asie Émergente ESG", ticker:"PAASI", isin:"FR0013412012", indice:"MSCI EM Asia ESG Leaders", zone:"Émergents", frais:0.30, encours:0.3, pea:true, dist:"Capitalisant", repli:"Synthétique", esg:"Sélection « ESG Leaders » par secteur"},
+  {nom:"Amundi PEA Amérique Latine ESG", ticker:"PALAT", isin:"FR0013412004", indice:"MSCI EM Latin America ESG Leaders Select", zone:"Émergents", frais:0.20, encours:0.044, pea:true, dist:"Capitalisant", repli:"Synthétique", esg:"Sélection « ESG Leaders » par secteur"}
+];
+
+/* ---------- COMPOSITION DES ETF ----------
+   Relevé sur les profils justETF (qui reprend les inventaires publiés par les
+   émetteurs). Chaque bloc porte sa propre date d'arrêté : les compositions ne
+   sont pas toutes mises à jour le même jour. Aucune valeur n'est estimée ou
+   recalculée — les pourcentages sont repris tels quels.
+   h = principales lignes · c = pays · s = secteurs                            */
+const DETAILS = {
+  "IE00B4L5Y983":{d:"29/05/2026",nb:1281,t10:27.69,
+    h:[["NVIDIA",5.42],["Apple",5.09],["Microsoft",3.53],["Amazon",2.91],["Alphabet A",2.46],["Broadcom",2.23],["Alphabet C",1.93],["Meta Platforms",1.54],["Tesla",1.36],["Micron Technology",1.22]],
+    c:[["United States",68.37],["Japan",5.55],["United Kingdom",3.05],["Canada",2.99],["Germany",2.14],["France",2.12],["Switzerland",2.11],["Netherlands",1.59],["Australia",1.58],["Ireland",1.17],["Other",9.33]],
+    s:[["Technology",30.86],["Financials",13.37],["Industrials",10.23],["Consumer Discretionary",9.26],["Telecommunication",8.63],["Health Care",7.72],["Consumer Staples",4.57],["Energy",3.79],["Basic Materials",2.92],["Utilities",2.48],["Real Estate",1.65],["Other",4.52]]},
+
+  "IE00BK5BQT80":{d:"31/05/2026",nb:3739,t10:24.07,
+    h:[["NVIDIA",4.60],["Apple",4.18],["Microsoft",3.11],["Amazon",2.42],["Alphabet A",2.05],["Broadcom",1.92],["TSMC",1.70],["Alphabet C",1.66],["Meta Platforms",1.29],["Tesla",1.14]],
+    c:[["United States",56.87],["Japan",5.59],["Taiwan",3.20],["South Korea",2.84],["United Kingdom",2.68],["Canada",2.54],["China",2.50],["Switzerland",1.83],["Germany",1.82],["France",1.70],["Australia",1.50],["India",1.32],["Netherlands",1.30],["Other",14.31]],
+    s:[["Technology",31.33],["Financials",13.53],["Industrials",9.60],["Consumer Discretionary",9.00],["Telecommunication",7.93],["Health Care",6.84],["Consumer Staples",4.19],["Energy",3.63],["Basic Materials",3.29],["Utilities",2.39],["Real Estate",1.72],["Other",6.55]]},
+
+  /* Part distribuante du même portefeuille que VWCE : l'inventaire publié est
+     identique, il est repris ici depuis le profil de cet ISIN. */
+  "IE00B3RBWM25":{d:"31/05/2026",nb:3739,t10:24.07,
+    h:[["NVIDIA",4.60],["Apple",4.18],["Microsoft",3.11],["Amazon",2.42],["Alphabet A",2.05],["Broadcom",1.92],["TSMC",1.70],["Alphabet C",1.66],["Meta Platforms",1.29],["Tesla",1.14]],
+    c:[["United States",56.87],["Japan",5.59],["Taiwan",3.20],["South Korea",2.84],["United Kingdom",2.68],["Canada",2.54],["China",2.50],["Switzerland",1.83],["Germany",1.82],["France",1.70],["Australia",1.50],["India",1.32],["Netherlands",1.30],["Other",14.31]],
+    s:[["Technology",31.33],["Financials",13.53],["Industrials",9.60],["Consumer Discretionary",9.00],["Telecommunication",7.93],["Health Care",6.84],["Consumer Staples",4.19],["Energy",3.63],["Basic Materials",3.29],["Utilities",2.39],["Real Estate",1.72],["Other",6.55]]},
+
+  "IE0003XJA0J9":{d:"26/05/2026",nb:3398,t10:25.30,
+    h:[["NVIDIA",4.94],["Apple",4.34],["Microsoft",3.00],["Amazon",2.50],["Alphabet A",2.23],["Broadcom",1.93],["Alphabet C",1.92],["TSMC",1.70],["Tesla",1.42],["Meta Platforms",1.32]],
+    c:[["United States",58.85],["Japan",5.52],["Taiwan",3.23],["South Korea",2.79],["United Kingdom",2.66],["Canada",2.66],["China",2.55],["Germany",1.84],["Switzerland",1.72],["France",1.71],["Australia",1.55],["Netherlands",1.24],["India",1.24],["Ireland",1.03],["Other",11.41]],
+    s:[["Technology",31.59],["Financials",13.99],["Industrials",9.72],["Consumer Discretionary",9.29],["Telecommunication",8.63],["Health Care",6.99],["Consumer Staples",4.43],["Energy",3.81],["Basic Materials",3.18],["Utilities",2.41],["Real Estate",1.59],["Other",4.37]]},
+
+  "IE00B5BMR087":{d:"29/05/2026",nb:503,t10:39.16,
+    h:[["NVIDIA",7.88],["Apple",7.04],["Microsoft",5.14],["Amazon",4.06],["Alphabet A",3.40],["Broadcom",3.25],["Alphabet C",2.70],["Meta Platforms",2.13],["Tesla",1.88],["Micron Technology",1.68]],
+    c:[["United States",94.88],["Ireland",1.40],["Other",3.72]],
+    s:[["Technology",38.88],["Telecommunication",10.32],["Consumer Discretionary",9.79],["Financials",9.29],["Health Care",8.17],["Industrials",7.63],["Consumer Staples",4.30],["Energy",3.13],["Utilities",2.10],["Real Estate",1.78],["Basic Materials",1.41],["Other",3.20]]},
+
+  "IE000XZSV718":{d:"29/05/2026",nb:503,t10:39.25,
+    h:[["NVIDIA",7.90],["Apple",7.05],["Microsoft",5.15],["Amazon",4.07],["Alphabet A",3.41],["Broadcom",3.26],["Alphabet C",2.71],["Meta Platforms",2.13],["Tesla",1.89],["Micron Technology",1.68]],
+    c:[["United States",95.09],["Ireland",1.40],["Other",3.51]],
+    s:[["Technology",38.98],["Telecommunication",10.35],["Consumer Discretionary",9.81],["Financials",9.30],["Health Care",8.19],["Industrials",7.65],["Consumer Staples",4.31],["Energy",3.13],["Utilities",2.10],["Real Estate",1.79],["Basic Materials",1.42],["Other",2.98]]},
+
+  "LU0908500753":{d:"27/05/2026",nb:610,t10:19.42,
+    h:[["ASML Holding",4.10],["HSBC Holdings",2.14],["Roche Holding",1.95],["AstraZeneca",1.93],["Novartis",1.91],["Nestlé",1.75],["Siemens",1.58],["Shell",1.57],["TotalEnergies",1.27],["Banco Santander",1.22]],
+    c:[["United Kingdom",19.58],["Germany",13.38],["France",12.80],["Switzerland",12.07],["Netherlands",8.86],["Spain",5.24],["Italy",4.90],["Sweden",4.64],["Finland",1.95],["Denmark",1.74],["Belgium",1.52],["Norway",1.09],["Other",12.23]],
+    s:[["Financials",23.13],["Industrials",18.39],["Technology",9.16],["Health Care",8.31],["Consumer Discretionary",6.89],["Consumer Staples",6.67],["Energy",5.04],["Utilities",4.61],["Basic Materials",4.46],["Telecommunication",3.04],["Real Estate",1.11],["Other",9.19]]},
+
+  "IE00B4K48X80":{d:"29/05/2026",nb:400,t10:20.69,
+    h:[["ASML Holding",4.47],["HSBC Holdings",2.30],["Roche Holding",2.11],["AstraZeneca",2.00],["Novartis",1.97],["Nestlé",1.87],["Shell",1.68],["Siemens",1.67],["SAP",1.35],["Banco Santander",1.27]],
+    c:[["United Kingdom",18.97],["Germany",13.78],["France",13.61],["Switzerland",12.59],["Netherlands",9.67],["Spain",5.41],["Italy",4.70],["Sweden",4.58],["Finland",1.79],["Denmark",1.51],["Belgium",1.31],["Other",12.08]],
+    s:[["Financials",22.48],["Industrials",18.05],["Technology",9.51],["Health Care",8.47],["Consumer Staples",7.47],["Consumer Discretionary",6.64],["Basic Materials",4.89],["Utilities",4.81],["Energy",4.79],["Telecommunication",3.84],["Real Estate",0.62],["Other",8.43]]},
+
+  "FR0013380607":{d:"27/05/2026",nb:47,t10:57.50,
+    h:[["Schneider Electric",8.47],["TotalEnergies",8.45],["LVMH",6.60],["Airbus",5.63],["BNP Paribas",5.41],["Safran",5.18],["Sanofi",4.91],["Air Liquide",4.68],["L'Oréal",4.09],["AXA",4.08]],
+    c:[["France",82.40],["Netherlands",7.00],["Switzerland",2.02],["Luxembourg",1.76]],
+    s:[["Industrials",29.63],["Consumer Discretionary",16.29],["Financials",13.62],["Energy",8.45],["Health Care",5.31],["Consumer Staples",4.39],["Technology",3.54],["Telecommunication",2.81],["Basic Materials",2.13],["Utilities",1.68],["Real Estate",0.65],["Other",11.51]]},
+
+  "IE00BKM4GZ66":{d:"29/05/2026",nb:3023,t10:34.47,
+    h:[["TSMC",12.89],["Samsung Electronics",6.84],["SK hynix",5.95],["Tencent Holdings",2.34],["Alibaba Group",1.80],["MediaTek",1.39],["Delta Electronics",1.07],["Hon Hai Precision",0.79],["Samsung Electronics (pref.)",0.75],["China Construction Bank",0.65]],
+    c:[["Taiwan",26.15],["South Korea",22.09],["China",16.69],["India",9.97],["Brazil",3.43],["Saudi Arabia",2.40],["South Africa",2.37],["Mexico",1.53],["Malaysia",1.15],["Poland",1.04],["Thailand",1.03],["Other",12.15]],
+    s:[["Technology",41.50],["Financials",15.58],["Consumer Discretionary",7.83],["Industrials",6.64],["Basic Materials",5.88],["Telecommunication",5.30],["Energy",3.11],["Health Care",2.64],["Consumer Staples",2.59],["Utilities",1.73],["Real Estate",1.48],["Other",5.73]]},
+
+  "NL0011683594":{d:"29/05/2026",nb:100,t10:35.54,
+    h:[["Exxon Mobil",5.70],["Verizon Communications",4.81],["Nestlé",3.70],["TotalEnergies",3.68],["Pfizer",3.58],["Shell",3.41],["Roche Holding",3.23],["PepsiCo",2.72],["Allianz",2.59],["BP",2.12]],
+    c:[["United States",23.62],["France",9.95],["United Kingdom",8.76],["Canada",7.07],["Germany",6.88],["Switzerland",6.68],["Japan",6.61],["Australia",6.29],["Italy",4.68],["Spain",4.46],["Singapore",3.84],["Other",11.16]],
+    s:[["Financials",32.15],["Energy",19.50],["Health Care",9.08],["Telecommunication",8.65],["Consumer Staples",7.84],["Utilities",6.62],["Consumer Discretionary",3.81],["Industrials",3.23],["Basic Materials",1.22],["Technology",0.29],["Other",7.61]]},
+
+  /* Obligataires : pas de ventilation sectorielle (un emprunt d'État n'a pas de
+     secteur d'activité), et l'émetteur ne publie pas de « top 10 » exploitable
+     sur un portefeuille de cette taille. On n'affiche donc que les pays émetteurs. */
+  "IE00BDBRDM35":{d:"29/05/2026",nb:19606,obligataire:true,
+    c:[["United States",19.02],["Japan",9.90],["China",6.98],["France",3.47],["United Kingdom",2.87],["Germany",2.53],["Ireland",2.50],["Canada",1.99],["Italy",1.94],["Spain",1.53],["Australia",1.26],["Other",46.01]]},
+
+  "LU1287023185":{d:"27/05/2026",nb:63,obligataire:true,
+    c:[["Italy",19.54],["France",17.45],["Germany",13.71],["Spain",12.31],["Belgium",4.48],["Ireland",2.79],["Netherlands",2.13],["Austria",1.91],["Portugal",1.61],["Finland",1.34],["Other",22.73]]},
+
+  /* Tracker physique du Nasdaq-100 — sert de référence d'exposition pour l'ETF
+     PEA synthétique qui suit le même indice (voir SYNTH). */
+  "IE00B53SZB19":{d:"29/05/2026",nb:102,t10:47.37,
+    h:[["NVIDIA",8.14],["Apple",7.27],["Microsoft",5.30],["Micron Technology",4.79],["Amazon",4.61],["AMD",3.69],["Alphabet A",3.51],["Tesla",3.45],["Broadcom",3.36],["Alphabet C",3.25]],
+    c:[["United States",91.89],["Other",8.11]],
+    s:[["Technology",55.70],["Telecommunication",13.38],["Consumer Discretionary",11.38],["Consumer Staples",6.40],["Health Care",3.57],["Industrials",2.40],["Utilities",1.18],["Energy",0.51],["Other",5.48]]}
+};
+
+/* ---------- ETF À RÉPLICATION SYNTHÉTIQUE ----------
+   Ces ETF ne détiennent pas les titres de l'indice : ils détiennent un panier
+   d'actions (souvent européennes, c'est ce qui les rend éligibles au PEA) et
+   échangent sa performance contre celle de l'indice via un swap. Leur inventaire
+   réel ne dit donc rien de l'exposition économique du porteur.
+   On affiche l'exposition de l'INDICE suivi, mesurée sur un ETF physique qui
+   réplique le même indice — et on le dit explicitement à l'écran.            */
+const SYNTH = {
+  "LU1681043599":{ref:"IE00B4L5Y983", indice:"MSCI World",  via:"iShares Core MSCI World"},
+  "IE0002XZSHO1":{ref:"IE00B4L5Y983", indice:"MSCI World",  via:"iShares Core MSCI World"},
+  "FR0011869353":{ref:"IE00B4L5Y983", indice:"MSCI World",  via:"iShares Core MSCI World"},
+  "FR0011871128":{ref:"IE00B5BMR087", indice:"S&P 500",     via:"iShares Core S&P 500"},
+  "FR0011550185":{ref:"IE00B5BMR087", indice:"S&P 500",     via:"iShares Core S&P 500"},
+  "FR0011871110":{ref:"IE00B53SZB19", indice:"Nasdaq-100",  via:"iShares Nasdaq 100"},
+  /* Indice ESG filtré : aucun ETF physique ne réplique le même indice, donc
+     aucune mesure d'exposition ne peut lui être attribuée sans extrapoler. */
+  "FR0013412020":{ref:null, indice:"MSCI EM ex-Egypt ESG Broad CTB Select"}
+};
+
+/* ---------- DONNÉES COURTIERS (indicatives, juillet 2026) ---------- */
+const COURTIERS = [
+  {nom:"BoursoBank", env:"PEA + CTO", frais:"dès ~2 € (Euronext)", ifu:true, fr:true, note:"Banque en ligne française ; tout intégré (compte + bourse)."},
+  {nom:"Fortuneo", env:"PEA + CTO", frais:"0 € jusqu'à 500 €/mois (offre), sinon dès ~2 €", ifu:true, fr:true, note:"Banque en ligne française ; grille simple pour débuter."},
+  {nom:"Bourse Direct", env:"PEA + CTO", frais:"dès 0,99 €", ifu:true, fr:true, note:"Spécialiste bourse français ; parmi les moins chers sur PEA."},
+  {nom:"Saxo (France)", env:"PEA + CTO", frais:"dès ~2 €", ifu:true, fr:true, note:"Large accès aux marchés mondiaux depuis une entité française."},
+  {nom:"Trade Republic", env:"CTO", frais:"1 € par ordre", ifu:true, fr:true, note:"Comptes récents sur IBAN français avec IFU ; anciens comptes allemands = 3916 + calculs à faire sur la période concernée."},
+  {nom:"Degiro", env:"CTO", frais:"~1 à 3 €", ifu:false, fr:false, note:"Frais très bas, mais déclaration à faire soi-même (2074-CMV, 2047) + 3916 chaque année."},
+  {nom:"Interactive Brokers", env:"CTO", frais:"dès ~1,25 €", ifu:false, fr:false, note:"Très complet, orienté investisseurs avancés ; fiscalité 100 % à votre charge + 3916."},
+  {nom:"eToro", env:"CTO", frais:"0 commission (frais de change/spread)", ifu:false, fr:false, note:"« 0 commission » ne veut pas dire gratuit : regardez le change et les spreads ; 3916 chaque année."}
+];
+
+/* ================= LEXIQUE : infobulles et fiches =================
+   « court »  : l'infobulle au survol, une phrase, pas plus.
+   « long »   : la fiche ouverte au clic. Absente = le clic affiche la phrase courte.
+   Objectif : qu'aucun mot de jargon ne reste sans explication à portée de souris. */
+const LEXIQUE = {
+
+  action: {mot:"Une action", cat:"Fiche · Les briques de base", court:"Une part de propriété d'une entreprise : vous en devenez copropriétaire.",
+    long:`
+    <p><strong>Acheter une action, c'est acheter un morceau d'entreprise.</strong> Si une société est
+    découpée en un million d'actions et que vous en détenez une, vous possédez un millionième de cette
+    entreprise : de ses usines, de sa marque, de ses bénéfices futurs.</p>
+    <div class="exemple"><b>Concrètement</b>
+    Vous achetez 10 actions LVMH à 600 €, soit 6 000 €. Vous êtes désormais actionnaire de LVMH. Si
+    l'entreprise prospère, d'autres investisseurs voudront ces actions et leur prix montera. Si elle va
+    mal, le prix baissera — et personne ne vous remboursera.</div>
+    <p><strong>Deux façons d'y gagner (ou d'y perdre).</strong></p>
+    <ul>
+      <li><strong>La plus-value</strong> : vous revendez plus cher que vous n'avez acheté. Tant que vous
+      ne vendez pas, ce gain n'existe que sur le papier — et il n'est pas imposé.</li>
+      <li><strong>Le dividende</strong> : une partie du bénéfice que l'entreprise reverse chaque année
+      à ses actionnaires. Toutes n'en versent pas ; certaines préfèrent tout réinvestir.</li>
+    </ul>
+    <p><strong>Le risque, dit franchement.</strong> Une action peut perdre 30 %, 50 %, ou tout. Une
+    entreprise peut faire faillite et l'actionnaire est le dernier servi. C'est pour cette raison qu'on
+    ne met presque jamais toutes ses économies sur une seule action — et que les
+    <strong>ETF</strong> existent : ils permettent d'en acheter des centaines d'un coup.</p>`},
+
+  etf: {mot:"Un ETF", cat:"Fiche · Les briques de base", court:"Un panier qui contient des centaines d'actions d'un coup, à frais très bas.",
+    long:`
+    <p><strong>Un ETF (ou « tracker ») est un panier d'actions qu'on achète en une seule fois.</strong>
+    Au lieu d'acheter Apple, puis Nestlé, puis Toyota une par une, vous achetez une part d'un fonds qui
+    les détient déjà toutes — dans les proportions d'un indice de référence.</p>
+    <div class="exemple"><b>Concrètement</b>
+    Un ETF « MSCI World » détient environ 1 300 grandes entreprises réparties dans 23 pays développés.
+    Avec un ordre unique de 50 €, vous devenez copropriétaire d'un tout petit morceau de chacune d'elles.</div>
+    <p><strong>Pourquoi c'est devenu la brique par défaut de l'épargne longue :</strong></p>
+    <ul>
+      <li><strong>La diversification est immédiate.</strong> Si une entreprise du panier s'effondre, elle
+      ne pèse que quelques dixièmes de pourcent de votre investissement.</li>
+      <li><strong>Les frais sont minuscules</strong> — souvent 0,10 % à 0,30 % par an, contre 1,5 % à
+      2,5 % pour un fonds « géré » vendu en banque. Sur trente ans, cet écart change tout.</li>
+      <li><strong>Personne ne choisit pour vous.</strong> L'ETF suit mécaniquement un indice : aucun
+      gérant ne fait de paris à votre place, et aucun ne se rémunère pour le faire.</li>
+    </ul>
+    <p><strong>Ce qu'un ETF ne fait pas</strong> : il ne vous protège pas des baisses de marché. Quand
+    les bourses reculent de 25 %, un ETF monde recule à peu près d'autant. Il élimine le risque d'avoir
+    misé sur la mauvaise entreprise, pas le risque du marché lui-même.</p>`},
+
+  obligation: {mot:"Une obligation", cat:"Fiche · Les briques de base", court:"Un prêt que vous consentez à un État ou une entreprise, contre un intérêt.",
+    long:`
+    <p><strong>Une obligation, c'est l'inverse d'une action : vous ne devenez pas propriétaire,
+    vous devenez prêteur.</strong> Un État ou une entreprise a besoin d'argent, il l'emprunte auprès des
+    investisseurs, et s'engage à verser un intérêt régulier puis à rembourser à une date connue d'avance.</p>
+    <div class="exemple"><b>Concrètement</b>
+    La France emprunte 1 000 € sur 10 ans à 3 %. Chaque année, vous touchez 30 €. Au bout de 10 ans, on
+    vous rend vos 1 000 €. Vous savez dès le départ ce que vous allez toucher — ce qui n'existe pas
+    avec une action.</div>
+    <p><strong>Pourquoi en mettre dans un portefeuille.</strong> Les obligations rapportent moins que les
+    actions sur le long terme, mais elles bougent moins et pas toujours dans le même sens. C'est cet effet
+    d'amortisseur qu'on cherche : quand la part d'obligations augmente dans les profils types de cette page,
+    ce n'est pas pour gagner plus, c'est pour <strong>encaisser des baisses moins brutales</strong>.</p>
+    <p><strong>Ce n'est pas sans risque pour autant.</strong> Si l'emprunteur fait défaut, vous perdez
+    votre mise. Et si les taux d'intérêt du marché montent, une obligation ancienne à 1 % devient moins
+    attractive qu'une neuve à 3 % : sa valeur de revente baisse. 2022 l'a rappelé brutalement à beaucoup
+    d'épargnants qui croyaient l'obligataire « sans danger ».</p>`},
+
+  synthetique: {mot:"La réplication synthétique", cat:"Fiche · Sous le capot", court:"L'ETF ne détient pas l'indice : il échange sa performance contre celle de l'indice via un contrat.",
+    long:`
+    <p><strong>Le PEA n'accepte que des titres européens.</strong> Comment, alors, peut-on détenir un ETF
+    S&amp;P 500 dans un PEA ? Grâce à un montage appelé réplication synthétique.</p>
+    <p>L'ETF achète réellement un panier d'actions européennes — ce qui le rend éligible au PEA — puis
+    signe un contrat d'échange (un « swap ») avec une banque : <strong>je te donne la performance de mon
+    panier européen, tu me donnes celle du S&amp;P 500</strong>. Le porteur touche bien la performance
+    américaine, tout en restant dans l'enveloppe fiscale française.</p>
+    <p><strong>Ce que ça implique.</strong> L'inventaire réel du fonds ne dit rien de ce à quoi vous êtes
+    exposé : vous verriez des actions européennes alors que votre performance dépend du marché américain.
+    C'est pour cette raison que, dans le comparateur, la composition affichée pour ces ETF est celle de
+    l'<em>indice suivi</em>, mesurée sur un ETF physique équivalent — et que c'est signalé à chaque fois.</p>
+    <p>Le contrat introduit une dépendance à la banque qui le signe. Le risque est encadré par la
+    réglementation européenne et reste faible, mais il n'est pas nul, et il n'existe pas dans un ETF
+    « physique » qui détient vraiment les titres.</p>`},
+
+  pea: {mot:"Le PEA", court:"Plan d'épargne en actions : une enveloppe fiscalement avantageuse après 5 ans, plafonnée à 150 000 €."},
+  cto: {mot:"Le CTO", court:"Compte-titres ordinaire : aucune limite d'instruments ni de montant, mais les gains sont imposés au fil des ventes."},
+  flattax: {mot:"La flat tax (PFU)", court:"Prélèvement forfaitaire unique appliqué aux revenus du capital : 31,4 % en 2026, soit 12,8 % d'impôt + 18,6 % de prélèvements sociaux."},
+  csg: {mot:"La CSG", court:"Contribution sociale généralisée : le principal des prélèvements sociaux. Sa hausse au 1ᵉʳ janvier 2026 explique le passage de la flat tax de 30 % à 31,4 %."},
+  ps: {mot:"Les prélèvements sociaux", court:"CSG, CRDS et prélèvement de solidarité, dus sur les gains du capital : 18,6 % depuis 2026. Ils s'appliquent même quand l'impôt sur le revenu, lui, ne s'applique pas."},
+  ifu: {mot:"L'IFU", court:"Imprimé fiscal unique : le récapitulatif que votre courtier transmet au fisc et qui pré-remplit votre déclaration. Les courtiers étrangers n'en fournissent pas toujours."},
+  f2074: {mot:"Le formulaire 2074", court:"La déclaration détaillée des plus-values de cession, à remplir soi-même quand le courtier ne fournit pas de récapitulatif fiscal français."},
+  f3916: {mot:"Le formulaire 3916", court:"La déclaration des comptes détenus à l'étranger. Obligatoire chaque année, avec une amende de 1 500 € par compte non déclaré."},
+  fondseuros: {mot:"Le fonds euros", court:"Le support garanti d'une assurance-vie : le capital versé ne peut pas baisser, en échange d'un rendement modeste."},
+  uc: {mot:"Les unités de compte", court:"Les supports non garantis d'une assurance-vie (ETF, actions, immobilier) : plus de potentiel, mais le capital peut baisser."},
+  liquidites: {mot:"Les liquidités", court:"L'argent disponible immédiatement : livrets, fonds monétaires, compte courant. Ça ne rapporte presque rien, mais ça ne bouge pas et c'est mobilisable du jour au lendemain."},
+  indice: {mot:"Un indice", court:"Une liste d'entreprises servant de référence — le CAC 40 pour la France, le S&P 500 pour les grandes américaines. Un ETF se contente de la copier."},
+  ter: {mot:"Les frais de gestion (TER)", court:"Le pourcentage prélevé chaque année sur votre investissement par l'émetteur du fonds. Il est déduit automatiquement : vous ne le voyez jamais passer, mais vous le payez."},
+  pab: {mot:"Un indice PAB", court:"« Paris-Aligned Benchmark » : indice climatique défini par le droit européen, avec une baisse immédiate de l'intensité carbone puis une trajectoire de réduction annuelle. Le plus exigeant des deux."},
+  ctb: {mot:"Un indice CTB", court:"« Climate Transition Benchmark » : même logique que le PAB, avec un point de départ moins strict. C'est la version « transition » plutôt que « alignée »."},
+  soulignes: {mot:"Les mots soulignés", court:"Pointillé = définition rapide au survol. Trait plein = fiche complète au clic."}
+};
+
+/* ---------- infobulle flottante ---------- */
+const tip = document.getElementById('tooltip');
+let tipActif = null;
+
+function montrerTip(el){
+  const d = LEXIQUE[el.dataset.t];
+  if(!d) return;
+  tipActif = el;
+  tip.innerHTML = `<b>${d.mot}</b> — ${d.court}` +
+    (d.long ? `<span class="tt-plus">Cliquer pour la fiche complète</span>` : '');
+  tip.classList.add('on');
+  tip.setAttribute('aria-hidden', 'false');
+  const r = el.getBoundingClientRect();
+  const t = tip.getBoundingClientRect();
+  let x = r.left + r.width / 2 - t.width / 2;
+  x = Math.max(12, Math.min(x, window.innerWidth - t.width - 12));
+  let y = r.top - t.height - 10;
+  if(y < 12) y = r.bottom + 10;
+  tip.style.left = x + 'px';
+  tip.style.top = y + 'px';
+}
+function cacherTip(){
+  tipActif = null;
+  tip.classList.remove('on');
+  tip.setAttribute('aria-hidden', 'true');
+}
+document.addEventListener('mouseover', ev => {
+  const el = ev.target.closest('.terme');
+  if(el && el !== tipActif) montrerTip(el);
+  else if(!el && tipActif) cacherTip();
+});
+document.addEventListener('focusin', ev => {
+  const el = ev.target.closest('.terme');
+  el ? montrerTip(el) : cacherTip();
+});
+window.addEventListener('scroll', () => { if(tipActif) cacherTip(); }, {passive:true});
+
+/* ---------- fiche complète ---------- */
+const fond = document.getElementById('modal-fond');
+const mKicker = document.getElementById('modal-kicker');
+const mTitre = document.getElementById('modal-titre');
+const mCorps = document.getElementById('modal-corps');
+const mClose = document.getElementById('modal-close');
+let dernierFocus = null;
+
+function ouvrirFiche(cle){
+  const d = LEXIQUE[cle];
+  if(!d) return;
+  dernierFocus = document.activeElement;
+  mKicker.textContent = d.cat || 'Définition';
+  mTitre.textContent = d.mot;
+  mCorps.innerHTML = d.long || `<p>${d.court}</p>`;
+  fond.classList.add('on');
+  document.body.style.overflow = 'hidden';
+  mClose.focus();
+  cacherTip();
+}
+function fermerFiche(){
+  fond.classList.remove('on');
+  document.body.style.overflow = '';
+  if(dernierFocus) dernierFocus.focus();
+}
+document.addEventListener('click', ev => {
+  const el = ev.target.closest('.terme');
+  if(el){ ev.preventDefault(); ouvrirFiche(el.dataset.t); }
+});
+mClose.addEventListener('click', fermerFiche);
+fond.addEventListener('click', ev => { if(ev.target === fond) fermerFiche(); });
+document.addEventListener('keydown', ev => {
+  if(ev.key === 'Escape' && fond.classList.contains('on')) fermerFiche();
+});
+
+/* ---------- cartes enveloppes : recto / verso ---------- */
+document.querySelectorAll('.flip').forEach(carte => {
+  const pivoter = () => {
+    const on = carte.classList.toggle('retourne');
+    carte.setAttribute('aria-pressed', on);
+  };
+  carte.addEventListener('click', ev => {
+    if(ev.target.closest('.terme')) return;   // un mot de lexique ne retourne pas la carte
+    pivoter();
+  });
+  carte.addEventListener('keydown', ev => {
+    if(ev.key === 'Enter' || ev.key === ' '){ ev.preventDefault(); pivoter(); }
+  });
+});
+
+/* ---------- NAVIGATION ---------- */
+const pages = document.querySelectorAll('.page');
+const navBtns = document.querySelectorAll('.nav button');
+function goto(id){
+  pages.forEach(p => p.classList.toggle('active', p.id === 'page-' + id));
+  navBtns.forEach(b => b.setAttribute('aria-current', b.dataset.page === id ? 'true' : 'false'));
+  window.scrollTo({top:0, behavior:'auto'});
+}
+navBtns.forEach(b => b.addEventListener('click', () => goto(b.dataset.page)));
+document.querySelectorAll('[data-goto]').forEach(el => {
+  el.addEventListener('click', e => { e.preventDefault(); goto(el.dataset.goto); });
+});
+
+/* ---------- FICHES ENVELOPPES : accordéons ---------- */
+document.querySelectorAll('.env-toggle').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const more = btn.nextElementSibling;
+    const open = more.classList.toggle('open');
+    btn.setAttribute('aria-expanded', open);
+    btn.textContent = open ? 'Réduire ↑' : 'En savoir plus ↓';
+  });
+});
+
+/* ---------- PROFILS : auto-attribution ---------- */
+document.querySelectorAll('.profil-card').forEach(card => {
+  card.querySelector('.profil-self').addEventListener('click', () => {
+    const dejaSel = card.classList.contains('selected');
+    document.querySelectorAll('.profil-card').forEach(c => {
+      c.classList.remove('selected');
+      c.querySelector('.profil-self').textContent = 'Ce profil me ressemble';
+    });
+    if(!dejaSel){
+      card.classList.add('selected');
+      card.querySelector('.profil-self').textContent = "✓ C\u2019est vous qui l\u2019avez décidé";
+    }
+  });
+});
+
+/* ---------- COMPARATEUR ETF ---------- */
+const fZone = document.getElementById('f-zone');
+const fFrais = document.getElementById('f-frais');
+const fFraisOut = document.getElementById('f-frais-out');
+const fDist = document.getElementById('f-dist');
+const fPea = document.getElementById('f-pea');
+const fEsg = document.getElementById('f-esg');
+const fTri = document.getElementById('f-tri');
+const etfBody = document.getElementById('etf-body');
+const etfVide = document.getElementById('etf-vide');
+const etfCount = document.getElementById('etf-count');
+let sortKey = null, sortDir = 1;
+
+function fmtFrais(v){ return v.toFixed(2).replace('.', ',') + ' %'; }
+function fmtEncours(v){
+  return v < 1 ? '~' + Math.round(v * 1000) + ' M€'
+               : '~' + String(v).replace('.', ',') + ' Md€';
+}
+function pct(v){ return v.toFixed(2).replace('.', ',') + ' %'; }
+
+/* Les libellés pays/secteurs arrivent en anglais depuis la source : on les
+   traduit à l'affichage sans toucher aux valeurs. */
+const PAYS = {
+  "United States":"États-Unis","Japan":"Japon","United Kingdom":"Royaume-Uni","Canada":"Canada",
+  "Germany":"Allemagne","France":"France","Switzerland":"Suisse","Netherlands":"Pays-Bas",
+  "Australia":"Australie","Ireland":"Irlande","Taiwan":"Taïwan","South Korea":"Corée du Sud",
+  "China":"Chine","India":"Inde","Spain":"Espagne","Italy":"Italie","Sweden":"Suède",
+  "Finland":"Finlande","Denmark":"Danemark","Belgium":"Belgique","Norway":"Norvège",
+  "Brazil":"Brésil","Saudi Arabia":"Arabie saoudite","South Africa":"Afrique du Sud",
+  "Mexico":"Mexique","Malaysia":"Malaisie","Poland":"Pologne","Thailand":"Thaïlande",
+  "Luxembourg":"Luxembourg","Singapore":"Singapour","Austria":"Autriche","Portugal":"Portugal",
+  "Other":"Autres"
+};
+const SECT = {
+  "Technology":"Technologie","Financials":"Finance","Industrials":"Industrie",
+  "Consumer Discretionary":"Consommation discrétionnaire","Telecommunication":"Télécommunications",
+  "Health Care":"Santé","Consumer Staples":"Consommation courante","Energy":"Énergie",
+  "Basic Materials":"Matériaux de base","Utilities":"Services aux collectivités",
+  "Real Estate":"Immobilier","Other":"Autres"
+};
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* 7 emplacements de couleur maximum : au-delà, l'œil ne distingue plus les
+   teintes. On garde les 6 premières lignes et on regroupe la queue dans
+   « Autres » — dont le détail reste listé en toutes lettres sous le graphique. */
+function prep(rows, dict){
+  const named = rows.filter(r => r[0] !== 'Other').map(r => [dict[r[0]] || r[0], r[1]]);
+  const residuel = rows.filter(r => r[0] === 'Other').reduce((a,b) => a + b[1], 0);
+  const tete = named.slice(0, 6);
+  const queue = named.slice(6);
+  const reste = queue.reduce((a,b) => a + b[1], 0) + residuel;
+  const items = tete.slice();
+  if(reste > 0.004) items.push(['Autres', Math.round(reste * 100) / 100]);
+  /* Les ventilations publiées ne totalisent pas toujours 100 % (liquidités,
+     produits dérivés, positions non classées). Si on laissait la barre remplir
+     toute la largeur, elle donnerait à voir une ventilation complète qui n'en
+     est pas une : on matérialise donc l'écart au lieu de le diluer. */
+  const total = rows.reduce((a,b) => a + b[1], 0);
+  const nonVentile = Math.round(Math.max(0, 100 - total) * 100) / 100;
+  return {items, queue, residuel, nonVentile};
+}
+
+function diagramme(titre, soustitre, rows, dict, motResidu){
+  const {items, queue, residuel, nonVentile} = prep(rows, dict);
+  const affiche = items.slice();
+  if(nonVentile > 0.5) affiche.push(['Non ventilé par la source', nonVentile]);
+  const couleur = i => i < items.length ? `var(--s${i+1})` : 'var(--viz-nc)';
+  const aria = affiche.map(i => `${i[0]} ${pct(i[1])}`).join(', ');
+
+  let note = '';
+  if(queue.length || residuel > 0.004){
+    const morceaux = queue.map(q => `${esc(q[0])} ${pct(q[1])}`);
+    if(residuel > 0.004) morceaux.push(`${motResidu} ${pct(residuel)}`);
+    note = `<p class="detail-note"><strong>Autres</strong> regroupe : ${morceaux.join(' · ')}.</p>`;
+  }
+  if(nonVentile > 0.5){
+    note += `<p class="detail-note">L'émetteur ne ventile que ${pct(100 - nonVentile)} du portefeuille ;
+      le reste (liquidités, dérivés, positions non classées) n'est pas détaillé. Nous le laissons
+      apparent plutôt que de le répartir.</p>`;
+  }
+
+  return `
+    <section>
+      <h4>${titre}</h4>
+      <p class="h4-sub">${soustitre}</p>
+      <div class="stack" role="img" aria-label="${esc(aria)}">
+        ${affiche.map((it,i) => `<div class="seg" style="flex:${it[1]};background:${couleur(i)}"></div>`).join('')}
+      </div>
+      <ul class="legend">
+        ${affiche.map((it,i) => `<li><i style="background:${couleur(i)}"></i><span class="lg-n">${esc(it[0])}</span><span class="lg-p">${pct(it[1])}</span></li>`).join('')}
+      </ul>
+      ${note}
+    </section>`;
+}
+
+function lignes(det){
+  const maxi = det.h[0][1];
+  return `
+    <section>
+      <h4>Principales lignes</h4>
+      <p class="h4-sub">Les 10 plus grosses positions, sur ${det.nb.toLocaleString('fr-FR')} au total</p>
+      <ul class="hold">
+        ${det.h.map(([n,p]) => `
+          <li>
+            <span class="hn" title="${esc(n)}">${esc(n)}</span>
+            <span class="hp">${pct(p)}</span>
+            <span class="hbar"><span style="width:${(p/maxi*100).toFixed(1)}%"></span></span>
+          </li>`).join('')}
+      </ul>
+      <p class="detail-note">À elles seules, ces 10 lignes pèsent <strong>${pct(det.t10)}</strong> de l'ETF.</p>
+    </section>`;
+}
+
+const lienJustetf = isin =>
+  `<a href="https://www.justetf.com/fr/etf-profile.html?isin=${isin}" target="_blank" rel="noopener">justETF · ${isin}</a>`;
+
+function detailHTML(e){
+  const syn = SYNTH[e.isin];
+
+  // Cas 1 — synthétique sans indice mesurable : on ne comble pas le trou.
+  if(syn && !syn.ref){
+    return `<div class="detail">
+      <div class="detail-flag">
+        <div><strong>Composition non publiée.</strong> Cet ETF est à réplication synthétique :
+        il détient un panier d'actions éligibles au PEA et échange sa performance contre celle de
+        l'indice <em>${esc(syn.indice)}</em> via un swap. Son inventaire réel ne reflète donc pas
+        votre exposition. Cet indice est une variante filtrée ESG que <strong>aucun ETF physique ne
+        réplique</strong> : nous ne disposons d'aucune mesure d'exposition sans l'extrapoler, ce que
+        nous nous refusons à faire. Consultez le DIC de l'émetteur.</div>
+      </div>
+      <p class="detail-src">Caractéristiques du fonds : ${lienJustetf(e.isin)}.</p>
+    </div>`;
+  }
+
+  const det = DETAILS[syn ? syn.ref : e.isin];
+  if(!det) return `<div class="detail"><p class="detail-empty">Composition non disponible pour cet ETF.</p></div>`;
+
+  const drapeau = syn ? `
+    <div class="detail-flag">
+      <div><strong>Réplication synthétique — ce que vous voyez est l'exposition de l'indice, pas
+      l'inventaire du fonds.</strong> Cet ETF détient un panier d'actions éligibles au PEA et échange
+      sa performance contre celle de l'indice <em>${esc(syn.indice)}</em> via un swap. Les chiffres
+      ci-dessous décrivent donc l'indice suivi — c'est bien l'exposition économique que vous portez —
+      mesurée sur ${esc(syn.via)}, un ETF physique qui réplique le même indice.</div>
+    </div>` : '';
+
+  const obl = det.obligataire;
+  const blocs = obl
+    ? diagramme('Pays émetteurs', `Répartition des ${det.nb.toLocaleString('fr-FR')} obligations détenues`, det.c, PAYS, 'autres émetteurs')
+    : lignes(det)
+      + diagramme('Où l\'argent est investi', 'Répartition par pays de cotation', det.c, PAYS, 'autres pays')
+      + diagramme('Dans quels secteurs', 'Répartition par secteur d\'activité', det.s, SECT, 'autres secteurs');
+
+  const noteObl = obl ? `<p class="detail-note" style="max-width:70ch">Un ETF obligataire n'a pas de
+    ventilation sectorielle : un emprunt d'État n'appartient à aucun secteur d'activité. Le nombre de
+    lignes (${det.nb.toLocaleString('fr-FR')}) rend par ailleurs un « top 10 » peu parlant — il pèserait
+    quelques pourcents à peine.</p>` : '';
+
+  const source = syn
+    ? `Exposition de l'indice ${esc(syn.indice)} mesurée sur ${esc(syn.via)} — ${lienJustetf(syn.ref)}, données arrêtées au ${det.d}.`
+    : `${lienJustetf(e.isin)}, données arrêtées au ${det.d}.`;
+
+  return `<div class="detail">
+    ${drapeau}
+    <div class="detail-grid">${blocs}</div>
+    ${noteObl}
+    <p class="detail-src">Source : ${source} Les pourcentages sont repris tels quels, sans recalcul.</p>
+  </div>`;
+}
+
+const ouverts = new Set();
+
+/* ---------- COLONNES AFFICHABLES ----------
+   Le tableau portait huit colonnes : trop pour être lu d'un coup d'œil, et trop
+   large pour tenir sur un écran. On n'en affiche que quatre par défaut ;
+   l'utilisateur ajoute les autres s'il en a besoin. La colonne « ETF » est
+   toujours présente et reste visible au défilement latéral : c'est l'ancre qui
+   permet de savoir quelle ligne on lit. */
+const COLS = [
+  {id:'indice',  lbl:'Indice suivi',    def:false},
+  {id:'zone',    lbl:'Zone',            def:true},
+  {id:'frais',   lbl:'Frais / an',      def:true,  num:true, tri:true},
+  {id:'encours', lbl:'Encours',         def:false, num:true, tri:true},
+  {id:'pea',     lbl:'PEA',             def:true},
+  {id:'dist',    lbl:'Dividendes',      def:true},
+  {id:'repli',   lbl:'Réplication',     def:false},
+  {id:'esg',     lbl:'Filtre durable',  def:false}
+];
+const visibles = new Set(COLS.filter(c => c.def).map(c => c.id));
+
+const colList = document.getElementById('col-list');
+const colCompte = document.getElementById('col-compte');
+colList.innerHTML = COLS.map(c => `
+  <label><input type="checkbox" data-col="${c.id}"${c.def ? ' checked' : ''}><span>${c.lbl}</span></label>`).join('');
+colList.addEventListener('change', ev => {
+  const id = ev.target.dataset.col;
+  if(!id) return;
+  ev.target.checked ? visibles.add(id) : visibles.delete(id);
+  renderETF();
+});
+
+const cellule = (e, id) => {
+  switch(id){
+    case 'indice':  return esc(e.indice);
+    case 'zone':    return esc(e.zone);
+    case 'frais':   return fmtFrais(e.frais);
+    case 'encours': return fmtEncours(e.encours);
+    case 'pea':     return e.pea ? '<span class="tag pea">Oui</span>' : '<span class="tag non">Non</span>';
+    case 'dist':    return esc(e.dist);
+    case 'repli':   return esc(e.repli);
+    case 'esg':     return e.esg ? `<span class="tag pea">${esc(e.esg)}</span>` : '<span class="tag non">—</span>';
+  }
+  return '';
+};
+
+function renderETF(){
+  const max = parseFloat(fFrais.value);
+  fFraisOut.textContent = fmtFrais(max);
+
+  let rows = ETFS.filter(e =>
+    (!fZone.value || e.zone === fZone.value) &&
+    e.frais <= max + 1e-9 &&
+    (!fDist.value || e.dist === fDist.value) &&
+    (!fPea.checked || e.pea) &&
+    (!fEsg.checked || !!e.esg)
+  );
+  if(sortKey === 'nom')  rows = rows.slice().sort((a,b) => a.nom.localeCompare(b.nom,'fr') * sortDir);
+  else if(sortKey)       rows = rows.slice().sort((a,b) => (a[sortKey] - b[sortKey]) * sortDir);
+
+  const cols = COLS.filter(c => visibles.has(c.id));
+  colCompte.textContent = `(${cols.length} sur ${COLS.length})`;
+  /* Sur petit écran on resserre : la table restera plus large que l'écran, mais la
+     colonne « ETF » est épinglée à gauche, donc on sait toujours quelle ligne on lit. */
+  const compact = window.innerWidth < 720;
+  document.getElementById('table-etf').style.minWidth =
+    ((compact ? 210 : 320) + cols.length * (compact ? 92 : 118)) + 'px';
+
+  document.getElementById('etf-head').innerHTML = `<tr>
+    <th class="col-nom">ETF</th>
+    ${cols.map(c => {
+      const actif = sortKey === c.id;
+      const fleche = actif ? (sortDir === 1 ? '↑' : '↓') : '↕';
+      return c.tri
+        ? `<th class="sortable${c.num ? ' num' : ''}${actif ? ' actif' : ''}" data-sort="${c.id}">${c.lbl} <span class="arrow">${fleche}</span></th>`
+        : `<th${c.num ? ' class="num"' : ''}>${c.lbl}</th>`;
+    }).join('')}
+    <th><span class="sr-only">Composition</span></th>
+  </tr>`;
+
+  etfCount.textContent = rows.length;
+  etfVide.style.display = rows.length ? 'none' : 'block';
+
+  const nbCols = cols.length + 2;
+  etfBody.innerHTML = rows.map(e => {
+    const ouvert = ouverts.has(e.isin);
+    return `
+    <tr>
+      <td class="col-nom"><div class="etf-nom">${esc(e.nom)}</div><div class="etf-ticker">${esc(e.ticker)} · ${esc(e.isin)}</div></td>
+      ${cols.map(c => `<td class="${c.num ? 'num mono' : ''}">${cellule(e, c.id)}</td>`).join('')}
+      <td><button class="etf-more-btn" data-isin="${e.isin}" aria-expanded="${ouvert}" aria-controls="d-${e.isin}">${ouvert ? 'Réduire ↑' : 'En savoir plus ↓'}</button></td>
+    </tr>
+    <tr class="detail-row" id="d-${e.isin}"${ouvert ? '' : ' hidden'}><td colspan="${nbCols}">${ouvert ? detailHTML(e) : ''}</td></tr>`;
+  }).join('');
+}
+
+/* Le tri est piloté par le menu déroulant ; les en-têtes restent cliquables et
+   se synchronisent avec lui, pour éviter deux états de tri divergents. */
+function majTri(k, d){
+  sortKey = k; sortDir = d;
+  fTri.value = k ? k + ':' + d : '';
+  renderETF();
+}
+fTri.addEventListener('change', () => {
+  if(!fTri.value) return majTri(null, 1);
+  const [k, d] = fTri.value.split(':');
+  majTri(k, parseInt(d, 10));
+});
+document.getElementById('etf-head').addEventListener('click', ev => {
+  const th = ev.target.closest('th.sortable');
+  if(!th) return;
+  const k = th.dataset.sort;
+  majTri(k, sortKey === k ? -sortDir : 1);
+});
+
+etfBody.addEventListener('click', ev => {
+  const btn = ev.target.closest('.etf-more-btn');
+  if(!btn) return;
+  const isin = btn.dataset.isin;
+  const e = ETFS.find(x => x.isin === isin);
+  const ligne = document.getElementById('d-' + isin);
+  const ouvert = !ouverts.has(isin);
+  if(ouvert){ ouverts.add(isin); ligne.firstElementChild.innerHTML = detailHTML(e); }
+  else { ouverts.delete(isin); ligne.firstElementChild.innerHTML = ''; }
+  ligne.hidden = !ouvert;
+  btn.setAttribute('aria-expanded', ouvert);
+  btn.textContent = ouvert ? 'Réduire ↑' : 'En savoir plus ↓';
+});
+
+[fZone, fDist].forEach(el => el.addEventListener('change', renderETF));
+fFrais.addEventListener('input', renderETF);
+[fPea, fEsg].forEach(el => el.addEventListener('change', renderETF));
+document.getElementById('f-reset').addEventListener('click', () => {
+  fZone.value = ''; fDist.value = ''; fPea.checked = false; fEsg.checked = false;
+  fFrais.value = 0.60; fTri.value = ''; sortKey = null; sortDir = 1;
+  renderETF();
+});
+renderETF();
+
+/* La table reste plus large que l'écran sur mobile : on le dit, plutôt que de
+   laisser l'utilisateur croire qu'il voit tout. */
+{
+  const hint = document.getElementById('hint-scroll');
+  const zone = document.querySelector('#page-etf .table-scroll');
+  const maj = () => { hint.style.display = zone.scrollWidth > zone.clientWidth + 1 ? 'inline' : 'none'; };
+  new ResizeObserver(maj).observe(zone);
+  maj();
+}
+
+/* ---------- LISTE DES FONDS À FILTRE DURABLE ---------- */
+document.getElementById('esg-liste').innerHTML = ETFS.filter(e => e.esg).map(e => `
+  <div class="esg-item">
+    <div class="en">${esc(e.nom)}<small>${esc(e.ticker)} · ${esc(e.isin)}${e.pea ? ' · éligible PEA' : ''}</small></div>
+    <div class="ei">${esc(e.esg)}<br><span style="color:var(--ink-faint)">Indice : ${esc(e.indice)}</span></div>
+    <div class="ef">${fmtFrais(e.frais)} / an</div>
+  </div>`).join('');
+
+/* ---------- COMPARATEUR COURTIERS ---------- */
+const cPea = document.getElementById('c-pea');
+const cIfu = document.getElementById('c-ifu');
+const cFr = document.getElementById('c-fr');
+const cBody = document.getElementById('courtier-body');
+const cVide = document.getElementById('courtier-vide');
+const cCount = document.getElementById('courtier-count');
+
+function renderCourtiers(){
+  const rows = COURTIERS.filter(c =>
+    (!cPea.checked || c.env.includes('PEA')) &&
+    (!cIfu.checked || c.ifu) &&
+    (!cFr.checked || c.fr)
+  );
+  cCount.textContent = rows.length;
+  cVide.style.display = rows.length ? 'none' : 'block';
+  cBody.innerHTML = rows.map(c => `
+    <tr>
+      <td><span class="etf-nom">${c.nom}</span></td>
+      <td>${c.env}</td>
+      <td class="mono">${c.frais}</td>
+      <td>${c.ifu ? '<span class="tag pea">IFU fourni</span>' : '<span class="tag alerte">À faire soi-même</span>'}</td>
+      <td>${c.fr ? '<span class="tag non">Non</span>' : '<span class="tag alerte">Oui → 3916</span>'}</td>
+      <td class="courtier-note">${c.note}</td>
+    </tr>`).join('');
+}
+[cPea, cIfu, cFr].forEach(el => el.addEventListener('change', renderCourtiers));
+document.getElementById('c-reset').addEventListener('click', () => {
+  cPea.checked = cIfu.checked = cFr.checked = false; renderCourtiers();
+});
+renderCourtiers();
+
+/* ---------- SONDAGE FINAL ---------- */
+const reponses = document.querySelectorAll('.sondage-reponse');
+const restart = document.getElementById('sondage-restart');
+document.querySelectorAll('.sondage-choix button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    reponses.forEach(r => r.classList.remove('visible'));
+    const cible = {oui:'.v-oui', hesite:'.v-hesite', non:'.v-non'}[btn.dataset.rep];
+    document.querySelector(cible).classList.add('visible');
+    restart.style.display = 'inline';
+    restart.scrollIntoView({behavior:'smooth', block:'nearest'});
+  });
+});
+restart.addEventListener('click', () => {
+  reponses.forEach(r => r.classList.remove('visible'));
+  restart.style.display = 'none';
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,4 @@
+# auto_adjust=False est passé explicitement dans ingest.py : le défaut a basculé
+# à True en 0.2.51, ce qui écrase silencieusement `Close` par le cours ajusté.
+yfinance>=0.2.51
+pandas>=2.0

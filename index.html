@@ -544,6 +544,144 @@ footer{
   overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;
 }
 
+/* ---------- SIMULATEUR ---------- */
+.sim-layout{display:grid;grid-template-columns:340px 1fr;gap:28px;margin-top:28px;align-items:start}
+.sim-panel{
+  background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px;
+}
+.sim-panel + .sim-panel{margin-top:18px}
+.sim-panel h3{
+  font-family:var(--mono);font-size:.72rem;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--red);margin-bottom:16px;
+}
+.sim-field{margin-bottom:18px}
+.sim-field:last-child{margin-bottom:0}
+.sim-field label{
+  display:block;font-size:.74rem;font-weight:600;text-transform:uppercase;
+  letter-spacing:.06em;color:var(--ink-faint);margin-bottom:7px;
+}
+.sim-montant{display:flex;align-items:center;gap:8px}
+.sim-montant input{
+  font-family:var(--mono);font-size:1.05rem;font-weight:600;padding:9px 11px;
+  border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--ink);
+  width:100%;min-width:0;
+}
+.sim-montant span{font-family:var(--mono);font-size:1.05rem;color:var(--ink-faint)}
+.sim-montant input:focus-visible{outline:2px solid var(--red);outline-offset:1px}
+.sim-preset{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.sim-preset button{
+  background:var(--paper);border:1px solid var(--line);border-radius:99px;
+  padding:4px 11px;font-size:.75rem;font-family:var(--mono);color:var(--ink-soft);
+}
+.sim-preset button:hover{border-color:var(--ink);color:var(--ink)}
+
+/* lignes d'allocation */
+.alloc-lignes{display:grid;gap:10px}
+.alloc-ligne{display:grid;grid-template-columns:1fr 76px 28px;gap:8px;align-items:center}
+.alloc-ligne select{
+  font-family:var(--body);font-size:.85rem;padding:7px 8px;border:1px solid var(--line);
+  border-radius:8px;background:var(--paper);color:var(--ink);width:100%;min-width:0;
+}
+.alloc-ligne .poids{
+  font-family:var(--mono);font-size:.85rem;padding:7px 8px;border:1px solid var(--line);
+  border-radius:8px;background:var(--paper);color:var(--ink);width:100%;text-align:right;
+}
+.alloc-ligne select:focus-visible,.alloc-ligne .poids:focus-visible{outline:2px solid var(--red);outline-offset:1px}
+.alloc-ligne .sup{
+  background:none;border:none;color:var(--ink-faint);font-size:1.1rem;line-height:1;
+  padding:4px;border-radius:6px;
+}
+.alloc-ligne .sup:hover{background:#FBEBE9;color:var(--red)}
+.alloc-actions{display:flex;gap:10px;align-items:center;margin-top:14px;flex-wrap:wrap}
+.alloc-add{
+  background:none;border:1px dashed var(--line);border-radius:8px;padding:7px 12px;
+  font-size:.8rem;font-weight:600;color:var(--ink-soft);
+}
+.alloc-add:hover{border-color:var(--ink);color:var(--ink)}
+.alloc-add[disabled]{opacity:.4;cursor:not-allowed}
+.alloc-total{
+  margin-left:auto;font-family:var(--mono);font-size:.82rem;padding:4px 10px;border-radius:99px;
+  border:1px solid #CFE3D8;background:var(--green-soft);color:var(--green);white-space:nowrap;
+}
+.alloc-total.ko{border-color:#EFC7C3;background:#FBEBE9;color:var(--red)}
+
+/* curseur de date */
+.sim-date-val{font-family:var(--mono);font-size:1.02rem;font-weight:600;margin-bottom:9px}
+.sim-date-val small{display:block;font-weight:400;font-size:.76rem;color:var(--ink-faint);font-family:var(--body);margin-top:2px}
+input[type="range"].sim-range{width:100%;accent-color:var(--ink);margin:2px 0}
+input[type="range"].sim-range:focus-visible{outline:2px solid var(--red);outline-offset:3px}
+.sim-bornes{display:flex;justify-content:space-between;font-family:var(--mono);font-size:.7rem;color:var(--ink-faint);margin-top:3px}
+.sim-contrainte{
+  margin-top:10px;font-size:.78rem;color:var(--amber);background:var(--amber-soft);
+  border:1px solid #E8DBB5;border-radius:8px;padding:8px 11px;line-height:1.5;
+}
+.sim-contrainte strong{color:var(--ink)}
+
+/* résultats */
+.sim-hero{
+  background:var(--card);border:1px solid var(--line);border-radius:14px;
+  padding:24px 26px;display:flex;gap:32px;flex-wrap:wrap;align-items:flex-end;
+}
+.hero-bloc .hero-label{
+  font-size:.72rem;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-faint);
+  font-family:var(--mono);margin-bottom:4px;
+}
+.hero-bloc .hero-val{
+  font-family:var(--body);font-size:2.6rem;font-weight:700;line-height:1;letter-spacing:-.02em;
+}
+.hero-bloc.sec .hero-val{font-size:1.35rem;font-weight:600}
+.hero-val.pos{color:var(--green)}
+.hero-val.neg{color:var(--red)}
+.sim-vide{
+  background:var(--card);border:1px dashed var(--line);border-radius:14px;
+  padding:44px 26px;text-align:center;color:var(--ink-faint);font-size:.92rem;
+}
+
+/* graphique */
+.chart-carte{
+  background:var(--card);border:1px solid var(--line);border-radius:14px;
+  padding:22px 24px 18px;margin-top:18px;
+}
+.chart-titre{font-size:.95rem;font-weight:600;margin-bottom:2px}
+.chart-sous{font-size:.8rem;color:var(--ink-faint);margin-bottom:16px}
+.chart-hote{position:relative;width:100%}
+/* Surtout PAS width:100% ici : le SVG est redessiné à la taille du conteneur,
+   il n'est jamais mis à l'échelle. Un étirement CSS déformerait la typo des
+   axes (11px dessinés rendus à 14px sur large, à 6px sur mobile). */
+.chart-hote svg{display:block;max-width:100%;overflow:visible}
+.axe{stroke:#C3C2B7;stroke-width:1}
+.grille{stroke:#E1E0D9;stroke-width:1}
+.axe-txt{fill:#898781;font-size:11px;font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums}
+.traj{fill:none;stroke:#2a78d6;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.traj-aire{fill:#2a78d6;opacity:.10}
+.seuil{stroke:#8A92A8;stroke-width:1;stroke-dasharray:4 4}
+.seuil-txt{fill:#52514e;font-size:11px;font-family:'IBM Plex Mono',monospace}
+.bout{fill:#2a78d6;stroke:#FFFFFF;stroke-width:2}
+.viseur{stroke:#8A92A8;stroke-width:1}
+.chart-info{
+  position:absolute;pointer-events:none;background:var(--ink);color:#fff;
+  border-radius:8px;padding:8px 11px;font-size:.78rem;line-height:1.45;white-space:nowrap;
+  box-shadow:0 4px 14px rgba(28,37,64,.22);opacity:0;transition:opacity .12s;z-index:5;
+}
+.chart-info.on{opacity:1}
+.chart-info .d{font-family:var(--mono);font-size:.72rem;opacity:.72}
+.chart-info .v{font-family:var(--mono);font-weight:600;font-size:.88rem}
+.chart-basc{
+  margin-top:14px;background:none;border:none;font-size:.78rem;color:var(--ink-soft);
+  text-decoration:underline;padding:4px 0;
+}
+.chart-basc:hover{color:var(--ink)}
+
+/* tableau de détail */
+.sim-detail{margin-top:18px}
+.sim-detail table{min-width:560px}
+td.pos{color:var(--green);font-weight:600}
+td.neg{color:var(--red);font-weight:600}
+
+@media (max-width:900px){
+  .sim-layout{grid-template-columns:1fr}
+}
+
 /* ---------- DÉTAIL ETF : composition ---------- */
 .etf-more-btn{
   background:none;border:1px solid var(--line);border-radius:8px;
@@ -637,6 +775,7 @@ tr.detail-row:hover>td{background:#FCFCF9}
       <button data-page="profils">Profils types</button>
       <button data-page="etf">Comparer les ETF</button>
       <button data-page="durable">Investir durable</button>
+      <button data-page="simulateur">Simuler</button>
       <button data-page="courtiers">Comparer les courtiers</button>
       <button data-page="action">Passer à l'action</button>
     </nav>
@@ -1273,7 +1412,111 @@ tr.detail-row:hover>td{background:#FCFCF9}
     </div>
 
     <div class="suite">
-      <button data-goto="courtiers">Étape 5 · Comparer les courtiers ⟶</button>
+      <button data-goto="simulateur">Étape 5 · Simuler une allocation ⟶</button>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== SIMULATEUR ===================== -->
+<section class="page" id="page-simulateur">
+  <div class="wrap section-pad">
+    <p class="eyebrow">Simuler · Rétrospective</p>
+    <h2>Et si vous aviez investi il y a quelques années ?</h2>
+    <p class="section-intro">
+      Composez une répartition, choisissez un montant et une date de départ&nbsp;: l'outil rejoue
+      ce qu'aurait donné <strong>cet investissement précis, dans le passé</strong>. Rien n'est
+      recommandé, rien n'est projeté — vous manipulez des cours qui ont réellement eu lieu.
+    </p>
+
+    <div class="notice amber">
+      <strong>Ceci regarde le passé, et le passé ne se répète pas.</strong> Une simulation
+      rétrospective montre ce qui <em>s'est produit</em> sur une période choisie — pas ce qui vous
+      attend. Changez la date de départ de quelques mois et le résultat peut basculer du tout au
+      tout&nbsp;: c'est précisément ce que cet outil sert à vous faire constater.
+      <strong>Les performances passées ne préjugent pas des performances futures</strong> et
+      investir comporte un risque de perte en capital.
+    </div>
+
+    <div class="sim-layout">
+      <!-- ---------- Colonne de commandes ---------- -->
+      <aside>
+        <div class="sim-panel">
+          <h3>Votre simulation</h3>
+
+          <div class="sim-field">
+            <label for="sim-capital">Montant investi, en une fois</label>
+            <div class="sim-montant">
+              <input type="number" id="sim-capital" value="10000" min="100" max="10000000" step="100">
+              <span>€</span>
+            </div>
+            <div class="sim-preset">
+              <button data-capital="1000">1 000</button>
+              <button data-capital="5000">5 000</button>
+              <button data-capital="10000">10 000</button>
+              <button data-capital="20000">20 000</button>
+            </div>
+          </div>
+
+          <div class="sim-field">
+            <label>Répartition</label>
+            <div class="alloc-lignes" id="alloc-lignes"></div>
+            <div class="alloc-actions">
+              <button class="alloc-add" id="alloc-add">+ Ajouter une ligne</button>
+              <button class="alloc-add" id="alloc-egal">Répartir également</button>
+              <span class="alloc-total" id="alloc-total">100 %</span>
+            </div>
+          </div>
+
+          <div class="sim-field">
+            <label for="sim-date">Date de départ</label>
+            <div class="sim-date-val" id="sim-date-val">
+              —
+              <small id="sim-duree"></small>
+            </div>
+            <input type="range" class="sim-range" id="sim-date" min="0" max="100" value="0">
+            <div class="sim-bornes"><span id="sim-borne-min">—</span><span id="sim-borne-max">—</span></div>
+            <div class="sim-contrainte" id="sim-contrainte" hidden></div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- ---------- Colonne de résultats ---------- -->
+      <div>
+        <div id="sim-sortie">
+          <div class="sim-vide" id="sim-vide">Chargement des cours…</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="notice">
+      <strong>Comment le calcul est fait.</strong> Achat unique à la date de départ, réparti selon
+      vos poids, puis <em>aucun arbitrage</em> jusqu'à la fin&nbsp;: chaque ligne suit son propre
+      cours et les poids dérivent naturellement. Les calculs utilisent les <strong>cours
+      ajustés</strong> (dividendes réinvestis et splits neutralisés), ce qui correspond à un
+      porteur qui n'aurait rien touché. En revanche, <strong>ni les frais de courtage, ni la
+      fiscalité, ni l'inflation ne sont déduits</strong> — le gain affiché est donc plus flatteur
+      que ce que vous auriez réellement encaissé.
+    </div>
+
+    <div class="notice green">
+      <strong>D'où viennent les cours.</strong> Historiques quotidiens issus de Yahoo Finance,
+      récupérés par le pipeline du projet et exportés en fichier statique&nbsp;; la date du dernier
+      relevé est affichée sous le graphique. Chaque ETF est suivi sur sa ligne de cotation en euros,
+      ce qui évite d'ajouter une conversion de change au calcul. Les profondeurs d'historique
+      diffèrent fortement d'un fonds à l'autre — l'outil vous en empêche de remonter au-delà de ce
+      que les données permettent réellement, plutôt que de combler le vide.
+    </div>
+
+    <div class="notice">
+      <strong>Boussole ne fournit aucun conseil en investissement.</strong> Ce simulateur est un
+      outil pédagogique&nbsp;: il n'évalue pas votre situation, ne tient compte ni de vos revenus,
+      ni de vos projets, ni de votre tolérance au risque, et ne constitue ni une recommandation
+      personnalisée ni une incitation à investir dans les supports cités. Seul un conseiller
+      régulé (CIF) est habilité à formuler une recommandation personnalisée.
+    </div>
+
+    <div class="suite">
+      <button data-goto="courtiers">Étape 6 · Comparer les courtiers ⟶</button>
     </div>
   </div>
 </section>
@@ -1790,10 +2033,16 @@ document.querySelectorAll('.flip').forEach(carte => {
 /* ---------- NAVIGATION ---------- */
 const pages = document.querySelectorAll('.page');
 const navBtns = document.querySelectorAll('.nav button');
+/* Redessin à brancher par le simulateur : un graphique tracé pendant que sa
+   page est encore `display:none` mesure une largeur de 0. On le prévient donc
+   au moment où sa page devient visible, plutôt que de deviner une largeur. */
+let auChangementDePage = null;
+
 function goto(id){
   pages.forEach(p => p.classList.toggle('active', p.id === 'page-' + id));
   navBtns.forEach(b => b.setAttribute('aria-current', b.dataset.page === id ? 'true' : 'false'));
   window.scrollTo({top:0, behavior:'auto'});
+  if(typeof auChangementDePage === 'function') auChangementDePage(id);
 }
 navBtns.forEach(b => b.addEventListener('click', () => goto(b.dataset.page)));
 document.querySelectorAll('[data-goto]').forEach(el => {
@@ -2199,6 +2448,494 @@ restart.addEventListener('click', () => {
   reponses.forEach(r => r.classList.remove('visible'));
   restart.style.display = 'none';
 });
+
+/* =====================================================================
+   SIMULATEUR — moteur de calcul + interface
+   Le moteur reprend la sémantique de pipeline/portefeuille.py : achat
+   unique, aucun rééquilibrage, cours ajustés, report du dernier cours
+   connu les jours non cotés. Toute divergence entre les deux serait un
+   bug — les valeurs de référence sont testées côté Python.
+   ===================================================================== */
+
+let COURS = null;               // contenu de data/cours.json
+const SERIES = {};              // {ticker: {i0, prix[] (reporté, sans trous)}}
+
+const euros = n => n.toLocaleString('fr-FR', {maximumFractionDigits:0}) + ' €';
+const euros2 = n => n.toLocaleString('fr-FR', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' €';
+const signe = n => (n >= 0 ? '+' : '−') + Math.abs(n).toLocaleString('fr-FR', {maximumFractionDigits:1});
+const dateFr = iso => {
+  const [a,m,j] = iso.split('-');
+  return `${j}/${m}/${a}`;
+};
+
+/* Report du dernier cours connu : deux places de cotation n'ont pas les
+   mêmes jours fériés, et un trou ne doit jamais valoir zéro. */
+function preparerSeries(){
+  for(const [t, e] of Object.entries(COURS.instruments)){
+    const plein = e.prix.slice();
+    for(let i = 1; i < plein.length; i++){
+      if(plein[i] === null || plein[i] === undefined) plein[i] = plein[i-1];
+    }
+    SERIES[t] = {i0: e.i0, prix: plein, cote: e.prix};
+  }
+}
+
+const prixA = (t, i) => {
+  const s = SERIES[t];
+  if(!s || i < s.i0) return null;
+  const k = Math.min(i - s.i0, s.prix.length - 1);
+  return s.prix[k];
+};
+
+/* Premier index >= depuis où le ticker a RÉELLEMENT coté (pas un report). */
+function premierCote(t, depuis){
+  const s = SERIES[t];
+  for(let i = Math.max(depuis, s.i0); i < s.i0 + s.cote.length; i++){
+    if(s.cote[i - s.i0] !== null && s.cote[i - s.i0] !== undefined) return i;
+  }
+  return -1;
+}
+
+function simuler(allocation, capital, iDebut, iFin){
+  const tickers = Object.keys(allocation);
+  if(!tickers.length) return null;
+
+  // Aligne tout le monde sur un même jour de calendrier réel.
+  let iDeb = iDebut;
+  for(const t of tickers){
+    const p = premierCote(t, iDebut);
+    if(p < 0) return null;
+    if(p > iDeb) iDeb = p;
+  }
+  if(iDeb >= iFin) return null;
+
+  const investi = {}, pDebut = {};
+  for(const t of tickers){
+    investi[t] = capital * allocation[t] / 100;
+    pDebut[t] = prixA(t, iDeb);
+    if(!pDebut[t]) return null;
+  }
+
+  const serie = new Array(iFin - iDeb + 1);
+  for(let i = iDeb; i <= iFin; i++){
+    let total = 0;
+    for(const t of tickers) total += investi[t] * prixA(t, i) / pDebut[t];
+    serie[i - iDeb] = total;
+  }
+
+  const detail = tickers.map(t => {
+    const pf = prixA(t, iFin);
+    return {
+      ticker: t,
+      poids: allocation[t],
+      prixDebut: pDebut[t],
+      prixFin: pf,
+      investi: investi[t],
+      valeur: investi[t] * pf / pDebut[t]
+    };
+  });
+
+  const valeurFinale = detail.reduce((a,d) => a + d.valeur, 0);
+  return {
+    iDebut: iDeb, iFin,
+    dateDebut: COURS.dates[iDeb], dateFin: COURS.dates[iFin],
+    capital, valeurFinale, detail, serie,
+    gain: valeurFinale - capital,
+    gainPct: (valeurFinale / capital - 1) * 100
+  };
+}
+
+/* ---------- État de l'interface ---------- */
+const simEtat = {lignes: [{ticker:'IWDA', poids:60}, {ticker:'MEUD', poids:40}], iDebut: 0};
+
+const elLignes = document.getElementById('alloc-lignes');
+const elTotal = document.getElementById('alloc-total');
+const elAdd = document.getElementById('alloc-add');
+const elEgal = document.getElementById('alloc-egal');
+const elCapital = document.getElementById('sim-capital');
+const elDate = document.getElementById('sim-date');
+const elDateVal = document.getElementById('sim-date-val');
+const elDuree = document.getElementById('sim-duree');
+const elContrainte = document.getElementById('sim-contrainte');
+const elSortie = document.getElementById('sim-sortie');
+
+const nomDe = t => (ETFS.find(e => e.ticker === t) || {}).nom
+                || (COURS.instruments[t] || {}).nom || t;
+
+function dessinerLignes(){
+  const dispo = Object.keys(COURS.instruments).sort((a,b) => nomDe(a).localeCompare(nomDe(b),'fr'));
+  elLignes.innerHTML = simEtat.lignes.map((l, n) => `
+    <div class="alloc-ligne">
+      <select data-n="${n}" aria-label="ETF de la ligne ${n+1}">
+        ${dispo.map(t => `<option value="${t}"${t===l.ticker?' selected':''}>${nomDe(t)}</option>`).join('')}
+      </select>
+      <input class="poids" type="number" data-n="${n}" value="${l.poids}" min="0" max="100" step="1"
+             aria-label="Poids de la ligne ${n+1} en pourcent">
+      <button class="sup" data-n="${n}" aria-label="Retirer la ligne ${n+1}"
+              ${simEtat.lignes.length <= 1 ? 'disabled style="opacity:.3"' : ''}>×</button>
+    </div>`).join('');
+
+  const total = simEtat.lignes.reduce((a,l) => a + (+l.poids || 0), 0);
+  elTotal.textContent = total.toLocaleString('fr-FR', {maximumFractionDigits:1}) + ' %';
+  elTotal.classList.toggle('ko', Math.abs(total - 100) > 0.1);
+  elAdd.disabled = simEtat.lignes.length >= 6;
+}
+
+/* La borne basse du curseur est la profondeur d'historique la PLUS COURTE
+   des lignes retenues : on refuse de proposer une date qu'on ne saurait pas
+   honorer, plutôt que de démarrer ailleurs sans le dire. */
+function majBornes(){
+  const tickers = simEtat.lignes.map(l => l.ticker);
+  const iMin = Math.max(...tickers.map(t => SERIES[t].i0));
+  const iMax = COURS.dates.length - 1;
+  const iPlancher = Math.min(iMin, iMax - 1);
+
+  elDate.min = iPlancher;
+  elDate.max = Math.max(iPlancher, iMax - 20);   // au moins ~1 mois de recul
+  if(simEtat.iDebut < iPlancher) simEtat.iDebut = iPlancher;
+  if(simEtat.iDebut > +elDate.max) simEtat.iDebut = +elDate.max;
+  elDate.value = simEtat.iDebut;
+
+  document.getElementById('sim-borne-min').textContent = dateFr(COURS.dates[iPlancher]);
+  document.getElementById('sim-borne-max').textContent = dateFr(COURS.dates[+elDate.max]);
+
+  // Qui bride la profondeur ?
+  const bridant = tickers.filter(t => SERIES[t].i0 === iMin);
+  const plusAncien = Math.min(...tickers.map(t => SERIES[t].i0));
+  if(bridant.length && iMin > plusAncien){
+    elContrainte.hidden = false;
+    elContrainte.innerHTML = `Vous ne pouvez pas remonter avant le
+      <strong>${dateFr(COURS.dates[iMin])}</strong> : ${bridant.map(nomDe).join(', ')}
+      n'a pas d'historique disponible avant cette date. Retirez cette ligne pour remonter plus loin.`;
+  } else {
+    elContrainte.hidden = true;
+  }
+}
+
+function allocationValide(){
+  const alloc = {};
+  for(const l of simEtat.lignes){
+    const p = +l.poids || 0;
+    if(p > 0) alloc[l.ticker] = (alloc[l.ticker] || 0) + p;
+  }
+  const total = Object.values(alloc).reduce((a,b) => a+b, 0);
+  return Math.abs(total - 100) <= 0.1 ? alloc : null;
+}
+
+function rendreSimulation(){
+  majBornes();
+  simEtat.iDebut = +elDate.value;
+  elDateVal.childNodes[0].nodeValue = dateFr(COURS.dates[simEtat.iDebut]) + ' ';
+
+  const iFin = COURS.dates.length - 1;
+  const jours = (new Date(COURS.dates[iFin]) - new Date(COURS.dates[simEtat.iDebut])) / 86400000;
+  const annees = jours / 365.25;
+  elDuree.textContent = annees >= 1
+    ? `soit ${annees.toFixed(1).replace('.', ',')} ans de détention`
+    : `soit ${Math.round(jours/30.4)} mois de détention`;
+
+  const alloc = allocationValide();
+  const capital = Math.max(0, +elCapital.value || 0);
+
+  if(!alloc){
+    elSortie.innerHTML = `<div class="sim-vide">Ajustez les poids pour atteindre 100 % —
+      le total actuel ne permet pas de calculer une répartition.</div>`;
+    return;
+  }
+  if(capital <= 0){
+    elSortie.innerHTML = `<div class="sim-vide">Saisissez un montant à investir.</div>`;
+    return;
+  }
+
+  const r = simuler(alloc, capital, simEtat.iDebut, iFin);
+  if(!r){
+    elSortie.innerHTML = `<div class="sim-vide">Pas assez d'historique commun pour ces lignes
+      à cette date.</div>`;
+    return;
+  }
+  afficherResultat(r);
+}
+
+function afficherResultat(r){
+  const pos = r.gain >= 0;
+  const annees = (new Date(r.dateFin) - new Date(r.dateDebut)) / 86400000 / 365.25;
+  // Taux annualisé : seulement au-delà d'un an, sinon le chiffre est trompeur.
+  const tca = annees >= 1 ? (Math.pow(r.valeurFinale / r.capital, 1/annees) - 1) * 100 : null;
+
+  elSortie.innerHTML = `
+    <div class="sim-hero">
+      <div class="hero-bloc">
+        <div class="hero-label">Valeur au ${dateFr(r.dateFin)}</div>
+        <div class="hero-val">${euros(r.valeurFinale)}</div>
+      </div>
+      <div class="hero-bloc sec">
+        <div class="hero-label">Écart</div>
+        <div class="hero-val sec ${pos?'pos':'neg'}">${signe(r.gain)} €</div>
+      </div>
+      <div class="hero-bloc sec">
+        <div class="hero-label">Soit</div>
+        <div class="hero-val sec ${pos?'pos':'neg'}">${signe(r.gainPct)} %</div>
+      </div>
+      ${tca !== null ? `
+      <div class="hero-bloc sec">
+        <div class="hero-label">Par an en moyenne</div>
+        <div class="hero-val sec ${tca>=0?'pos':'neg'}">${signe(tca)} %</div>
+      </div>` : ''}
+    </div>
+
+    <div class="chart-carte">
+      <div class="chart-titre">Trajectoire de ${euros(r.capital)} investis le ${dateFr(r.dateDebut)}</div>
+      <div class="chart-sous">Valeur du portefeuille, cours ajustés, hors frais et fiscalité</div>
+      <div class="chart-hote" id="chart-hote">
+        <div class="chart-info" id="chart-info"></div>
+      </div>
+      <button class="chart-basc" id="chart-basc">Afficher les valeurs sous forme de tableau</button>
+      <div id="chart-table" hidden></div>
+    </div>
+
+    <div class="sim-detail table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Ligne</th><th>Poids</th><th>Investi</th>
+            <th>Cours au départ</th><th>Cours à l'arrivée</th><th>Valeur</th><th>Écart</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${r.detail.map(d => {
+            const ecart = (d.valeur/d.investi - 1) * 100;
+            return `<tr>
+              <td><div class="etf-nom">${nomDe(d.ticker)}</div><div class="etf-ticker">${d.ticker}</div></td>
+              <td class="mono">${d.poids.toLocaleString('fr-FR')} %</td>
+              <td class="mono">${euros(d.investi)}</td>
+              <td class="mono">${d.prixDebut.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+              <td class="mono">${d.prixFin.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+              <td class="mono">${euros2(d.valeur)}</td>
+              <td class="mono ${ecart>=0?'pos':'neg'}">${signe(ecart)} %</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+
+    <p class="detail-src" style="margin-top:14px">
+      Cours ajustés relevés jusqu'au ${dateFr(COURS.dates[COURS.dates.length-1])}
+      (export du ${dateFr(COURS.genere_le)}). Frais de courtage, fiscalité et inflation non déduits.
+    </p>`;
+
+  tracerCourbe(r);
+  const basc = document.getElementById('chart-basc');
+  const tbl = document.getElementById('chart-table');
+  basc.addEventListener('click', () => {
+    const ouvert = tbl.hidden;
+    if(ouvert && !tbl.innerHTML) tbl.innerHTML = tableauTrajectoire(r);
+    tbl.hidden = !ouvert;
+    basc.textContent = ouvert ? 'Masquer le tableau' : 'Afficher les valeurs sous forme de tableau';
+  });
+}
+
+/* Table-view : un point par an + le point final, pour que toute valeur du
+   graphique reste atteignable sans survol (et au clavier). */
+function tableauTrajectoire(r){
+  const pts = [];
+  let anneeVue = null;
+  for(let i = 0; i < r.serie.length; i++){
+    const iso = COURS.dates[r.iDebut + i];
+    const an = iso.slice(0,4);
+    if(an !== anneeVue){ pts.push([iso, r.serie[i]]); anneeVue = an; }
+  }
+  const dernier = COURS.dates[r.iFin];
+  if(pts[pts.length-1][0] !== dernier) pts.push([dernier, r.serie[r.serie.length-1]]);
+  return `<div class="table-scroll" style="margin-top:12px">
+    <table><thead><tr><th>Date</th><th>Valeur du portefeuille</th><th>Écart cumulé</th></tr></thead>
+    <tbody>${pts.map(([d,v]) => `<tr>
+      <td class="mono">${dateFr(d)}</td>
+      <td class="mono">${euros2(v)}</td>
+      <td class="mono ${v>=r.capital?'pos':'neg'}">${signe((v/r.capital-1)*100)} %</td>
+    </tr>`).join('')}</tbody></table></div>`;
+}
+
+/* ---------- Tracé de la courbe ---------- */
+let detacherChart = null;
+let redessinerChart = null;
+
+// Le graphique ne peut être mesuré que lorsque son onglet est affiché.
+auChangementDePage = id => {
+  if(id === 'simulateur' && typeof redessinerChart === 'function') redessinerChart();
+};
+
+function tracerCourbe(r){
+  const hote = document.getElementById('chart-hote');
+  if(!hote) return;
+  if(detacherChart) detacherChart();
+
+  const dessiner = () => {
+    const L = hote.clientWidth || 640;
+    const H = Math.max(230, Math.min(340, Math.round(L * 0.42)));
+    const M = {haut:14, droite:64, bas:26, gauche:56};
+    const pl = L - M.gauche - M.droite;
+    const ph = H - M.haut - M.bas;
+
+    const vals = r.serie;
+    let vmin = Math.min(...vals, r.capital), vmax = Math.max(...vals, r.capital);
+    const marge = (vmax - vmin) * 0.12 || vmax * 0.05;
+    vmin -= marge; vmax += marge;
+
+    const x = i => M.gauche + (i / (vals.length - 1)) * pl;
+    const y = v => M.haut + ph - ((v - vmin) / (vmax - vmin)) * ph;
+
+    // Graduations rondes
+    const ticks = [];
+    const brut = (vmax - vmin) / 4;
+    const mag = Math.pow(10, Math.floor(Math.log10(brut)));
+    const pas = [1,2,2.5,5,10].map(m => m*mag).find(p => p >= brut) || mag*10;
+    for(let v = Math.ceil(vmin/pas)*pas; v <= vmax; v += pas) ticks.push(v);
+
+    const chemin = vals.map((v,i) => `${i?'L':'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join('');
+    const aire = `${chemin}L${x(vals.length-1).toFixed(1)},${(M.haut+ph).toFixed(1)}`
+               + `L${x(0).toFixed(1)},${(M.haut+ph).toFixed(1)}Z`;
+
+    // ~6 repères de dates, alignés sur des points réels
+    const nbX = Math.max(2, Math.min(6, Math.floor(pl / 90)));
+    const repX = Array.from({length:nbX}, (_,k) => Math.round(k*(vals.length-1)/(nbX-1)));
+
+    const svg = `
+      <svg viewBox="0 0 ${L} ${H}" width="${L}" height="${H}" role="img"
+           aria-label="Trajectoire du portefeuille de ${dateFr(r.dateDebut)} à ${dateFr(r.dateFin)}, de ${euros(r.capital)} à ${euros(r.valeurFinale)}">
+        ${ticks.map(v => `<line class="grille" x1="${M.gauche}" x2="${M.gauche+pl}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}"/>`).join('')}
+        ${ticks.map(v => `<text class="axe-txt" x="${M.gauche-9}" y="${(y(v)+4).toFixed(1)}" text-anchor="end">${Math.round(v).toLocaleString('fr-FR')}</text>`).join('')}
+        <path class="traj-aire" d="${aire}"/>
+        <line class="seuil" x1="${M.gauche}" x2="${M.gauche+pl}" y1="${y(r.capital).toFixed(1)}" y2="${y(r.capital).toFixed(1)}"/>
+        <text class="seuil-txt" x="${M.gauche+pl+7}" y="${(y(r.capital)+4).toFixed(1)}">investi</text>
+        <path class="traj" d="${chemin}"/>
+        <circle class="bout" cx="${x(vals.length-1).toFixed(1)}" cy="${y(vals[vals.length-1]).toFixed(1)}" r="4.5"/>
+        <line class="axe" x1="${M.gauche}" x2="${M.gauche+pl}" y1="${M.haut+ph}" y2="${M.haut+ph}"/>
+        ${repX.map(i => `<text class="axe-txt" x="${x(i).toFixed(1)}" y="${H-6}" text-anchor="${i===0?'start':i===vals.length-1?'end':'middle'}">${COURS.dates[r.iDebut+i].slice(0,7).split('-').reverse().join('/')}</text>`).join('')}
+        <line class="viseur" id="viseur" y1="${M.haut}" y2="${M.haut+ph}" x1="0" x2="0" style="opacity:0"/>
+        <circle class="bout" id="viseur-pt" r="4.5" style="opacity:0"/>
+        <rect id="capteur" x="${M.gauche}" y="${M.haut}" width="${pl}" height="${ph}" fill="transparent"/>
+      </svg>`;
+
+    const info = hote.querySelector('.chart-info');
+    hote.innerHTML = svg;
+    hote.appendChild(info);
+
+    const capteur = hote.querySelector('#capteur');
+    const viseur = hote.querySelector('#viseur');
+    const point = hote.querySelector('#viseur-pt');
+
+    const bouger = ev => {
+      const box = hote.querySelector('svg').getBoundingClientRect();
+      const px = (ev.touches ? ev.touches[0].clientX : ev.clientX) - box.left;
+      let i = Math.round(((px - M.gauche) / pl) * (vals.length - 1));
+      i = Math.max(0, Math.min(vals.length - 1, i));
+      const vx = x(i), vy = y(vals[i]);
+      viseur.setAttribute('x1', vx); viseur.setAttribute('x2', vx); viseur.style.opacity = .7;
+      point.setAttribute('cx', vx); point.setAttribute('cy', vy); point.style.opacity = 1;
+      const ecart = (vals[i]/r.capital - 1) * 100;
+      info.innerHTML = `<div class="d">${dateFr(COURS.dates[r.iDebut+i])}</div>
+                        <div class="v">${euros2(vals[i])}</div>
+                        <div class="d">${signe(ecart)} % vs investi</div>`;
+      info.classList.add('on');
+      const li = info.offsetWidth;
+      info.style.left = Math.max(0, Math.min(L - li, vx - li/2)) + 'px';
+      info.style.top = Math.max(0, vy - info.offsetHeight - 12) + 'px';
+    };
+    const partir = () => {
+      viseur.style.opacity = 0; point.style.opacity = 0; info.classList.remove('on');
+    };
+    capteur.addEventListener('mousemove', bouger);
+    capteur.addEventListener('touchmove', bouger, {passive:true});
+    capteur.addEventListener('mouseleave', partir);
+    capteur.addEventListener('touchend', partir);
+  };
+
+  // Le tracé part toujours de la largeur RÉELLE du conteneur. Tant que la page
+  // du simulateur est masquée, cette largeur vaut 0 : on ne dessine pas (une
+  // largeur de repli serait ensuite figée et le SVG étiré). C'est `goto` qui
+  // rappellera au moment où l'onglet devient visible.
+  const dessinerSiPret = () => {
+    if(!hote.isConnected || hote.clientWidth < 40) return false;
+    dessiner();
+    return true;
+  };
+  redessinerChart = dessinerSiPret;
+  dessinerSiPret();
+
+  // ResizeObserver pour le redimensionnement du conteneur (ouverture d'un
+  // panneau, changement de colonne), `resize` en filet de sécurité : si l'un
+  // des deux ne se déclenche pas, le graphique garde sa taille réelle au lieu
+  // d'être silencieusement déformé.
+  const ro = new ResizeObserver(() => dessinerSiPret());
+  ro.observe(hote);
+  const surResize = () => dessinerSiPret();
+  window.addEventListener('resize', surResize);
+  detacherChart = () => { ro.disconnect(); window.removeEventListener('resize', surResize); };
+}
+
+/* ---------- Branchements ---------- */
+elLignes.addEventListener('change', ev => {
+  const n = +ev.target.dataset.n;
+  if(ev.target.tagName === 'SELECT') simEtat.lignes[n].ticker = ev.target.value;
+  else if(ev.target.classList.contains('poids')) simEtat.lignes[n].poids = +ev.target.value || 0;
+  dessinerLignes(); rendreSimulation();
+});
+elLignes.addEventListener('input', ev => {
+  if(!ev.target.classList.contains('poids')) return;
+  simEtat.lignes[+ev.target.dataset.n].poids = +ev.target.value || 0;
+  const total = simEtat.lignes.reduce((a,l) => a + (+l.poids||0), 0);
+  elTotal.textContent = total.toLocaleString('fr-FR',{maximumFractionDigits:1}) + ' %';
+  elTotal.classList.toggle('ko', Math.abs(total-100) > 0.1);
+  rendreSimulation();
+});
+elLignes.addEventListener('click', ev => {
+  const b = ev.target.closest('.sup');
+  if(!b || b.disabled) return;
+  simEtat.lignes.splice(+b.dataset.n, 1);
+  dessinerLignes(); rendreSimulation();
+});
+elAdd.addEventListener('click', () => {
+  const pris = new Set(simEtat.lignes.map(l => l.ticker));
+  const libre = Object.keys(COURS.instruments).find(t => !pris.has(t));
+  if(!libre) return;
+  simEtat.lignes.push({ticker: libre, poids: 0});
+  dessinerLignes(); rendreSimulation();
+});
+elEgal.addEventListener('click', () => {
+  const n = simEtat.lignes.length;
+  const base = Math.floor(100 / n * 10) / 10;
+  simEtat.lignes.forEach(l => l.poids = base);
+  // le reliquat d'arrondi va sur la première ligne, pour tomber pile à 100
+  simEtat.lignes[0].poids = +(100 - base * (n - 1)).toFixed(1);
+  dessinerLignes(); rendreSimulation();
+});
+elCapital.addEventListener('input', rendreSimulation);
+document.querySelectorAll('.sim-preset button').forEach(b => {
+  b.addEventListener('click', () => { elCapital.value = b.dataset.capital; rendreSimulation(); });
+});
+elDate.addEventListener('input', () => { simEtat.iDebut = +elDate.value; rendreSimulation(); });
+
+/* ---------- Chargement des cours ---------- */
+fetch('data/cours.json')
+  .then(r => { if(!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+  .then(j => {
+    COURS = j;
+    preparerSeries();
+    // Position de départ : ~5 ans en arrière si l'historique le permet.
+    simEtat.iDebut = Math.max(0, COURS.dates.length - 1 - 1260);
+    dessinerLignes();
+    rendreSimulation();
+  })
+  .catch(err => {
+    document.getElementById('sim-vide').innerHTML = `
+      <strong style="color:var(--ink)">Les cours n'ont pas pu être chargés.</strong><br><br>
+      Ouvert directement depuis le disque, le navigateur bloque la lecture de
+      <code>data/cours.json</code> (règle de sécurité <em>file://</em>).<br>
+      Lancez un serveur local depuis le dossier du projet&nbsp;:<br>
+      <code style="display:inline-block;margin-top:8px;background:#F0F1EA;padding:6px 10px;border-radius:6px">python -m http.server 8000</code><br>
+      puis ouvrez <code>http://localhost:8000</code>.<br>
+      <small style="opacity:.7">(${err.message})</small>`;
+  });
 </script>
 </body>
 </html>

@@ -1,0 +1,13 @@
+# Base reconstructible intégralement par `python pipeline/ingest.py --init --full`
+pipeline/*.db
+pipeline/*.db-journal
+
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# Artefacts Windows / Google Drive
+desktop.ini
+Thumbs.db

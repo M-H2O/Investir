@@ -25,29 +25,29 @@ from pathlib import Path
 import pandas as pd
 import yfinance as yf
 
-from catalogue import FX_PAIRS, Instrument, tous
+from catalogue import FX_PAIRS, Instrument, all_instruments
 
-RACINE = Path(__file__).parent
-DB_DEFAUT = RACINE / "boussole.db"
-SCHEMA = RACINE / "schema.sql"
+ROOT = Path(__file__).parent
+DEFAULT_DB = ROOT / "boussole.db"
+SCHEMA = ROOT / "schema.sql"
 SOURCE = "yahoo"
 
 # On refetch quelques jours déjà connus à chaque passe : Yahoo corrige son
 # historique récent a posteriori, et l'upsert absorbe la reprise sans doublon.
-RECOUVREMENT_JOURS = 7
+OVERLAP_DAYS = 7
 
 # Les repères `yahoo_depuis` du catalogue proviennent d'une requête mensuelle :
 # ils précèdent la première barre quotidienne de quelques jours. On ne signale
 # donc qu'un écart franc, pas ce décalage de calendrier.
-TOLERANCE_HISTORIQUE_JOURS = 31
+HISTORY_TOLERANCE_DAYS = 31
 
-TENTATIVES = 3
-PAUSE_ENTRE_TICKERS = 0.4   # secondes — on reste poli avec une API non contractuelle
+MAX_ATTEMPTS = 3
+PAUSE_BETWEEN_TICKERS = 0.4   # secondes — on reste poli avec une API non contractuelle
 
 log = logging.getLogger("ingest")
 
 
-def _configurer_yfinance() -> None:
+def _configure_yfinance() -> None:
     """Fait remonter les erreurs yfinance au lieu de les avaler.
 
     Par défaut yfinance masque les exceptions et renvoie un DataFrame vide, ce
@@ -61,13 +61,13 @@ def _configurer_yfinance() -> None:
         log.debug("yf.config indisponible — comportement d'erreurs par défaut")
 
 
-_configurer_yfinance()
+_configure_yfinance()
 
 
 # ---------------------------------------------------------------------
 #  Base
 # ---------------------------------------------------------------------
-def ouvrir(chemin: Path) -> sqlite3.Connection:
+def open_db(chemin: Path) -> sqlite3.Connection:
     cx = sqlite3.connect(chemin)
     cx.row_factory = sqlite3.Row
     cx.execute("PRAGMA foreign_keys = ON")
@@ -101,7 +101,7 @@ def sync_catalogue(cx: sqlite3.Connection, instruments: list[Instrument]) -> Non
     log.info("Catalogue synchronisé : %d instruments", len(instruments))
 
 
-def id_instrument(cx: sqlite3.Connection, inst: Instrument) -> int:
+def get_instrument_id(cx: sqlite3.Connection, inst: Instrument) -> int:
     row = cx.execute(
         "SELECT instrument_id FROM instruments WHERE ticker = ? AND exchange = ?",
         (inst.ticker, inst.exchange),
@@ -113,7 +113,7 @@ def id_instrument(cx: sqlite3.Connection, inst: Instrument) -> int:
     return row["instrument_id"]
 
 
-def derniere_date(cx: sqlite3.Connection, instrument_id: int) -> date | None:
+def last_stored_date(cx: sqlite3.Connection, instrument_id: int) -> date | None:
     row = cx.execute(
         "SELECT MAX(price_date) AS d FROM prices_daily WHERE instrument_id = ?",
         (instrument_id,),
@@ -124,7 +124,7 @@ def derniere_date(cx: sqlite3.Connection, instrument_id: int) -> date | None:
 # ---------------------------------------------------------------------
 #  Récupération
 # ---------------------------------------------------------------------
-def telecharger(symbole: str, depuis: date | None) -> pd.DataFrame:
+def download(symbol: str, since: date | None) -> pd.DataFrame:
     """Renvoie l'historique quotidien brut. DataFrame vide si rien à récupérer.
 
     `auto_adjust=False` est explicite et non négociable : depuis yfinance 0.2.51
@@ -134,27 +134,27 @@ def telecharger(symbole: str, depuis: date | None) -> pd.DataFrame:
     cherche précisément à préserver en stockant les deux.
     """
     kwargs = dict(auto_adjust=False, actions=False)
-    derniere_erreur: Exception | None = None
+    last_error: Exception | None = None
 
-    for essai in range(1, TENTATIVES + 1):
+    for attempt in range(1, MAX_ATTEMPTS + 1):
         try:
-            tk = yf.Ticker(symbole)
-            if depuis is None:
+            tk = yf.Ticker(symbol)
+            if since is None:
                 df = tk.history(period="max", **kwargs)
             else:
-                df = tk.history(start=depuis.isoformat(), **kwargs)
+                df = tk.history(start=since.isoformat(), **kwargs)
             return df if df is not None else pd.DataFrame()
         except Exception as exc:                      # noqa: BLE001 — API tierce instable
-            derniere_erreur = exc
-            attente = 2 ** essai
+            last_error = exc
+            wait = 2 ** attempt
             log.warning("%s : échec %d/%d (%s) — nouvelle tentative dans %ds",
-                        symbole, essai, TENTATIVES, exc, attente)
-            time.sleep(attente)
+                        symbol, attempt, MAX_ATTEMPTS, exc, wait)
+            time.sleep(wait)
 
-    raise RuntimeError(f"{symbole} : abandon après {TENTATIVES} tentatives") from derniere_erreur
+    raise RuntimeError(f"{symbol} : abandon après {MAX_ATTEMPTS} tentatives") from last_error
 
 
-def normaliser(df: pd.DataFrame) -> pd.DataFrame:
+def normalize(df: pd.DataFrame) -> pd.DataFrame:
     """Ramène le DataFrame yfinance aux colonnes du schéma, index en date pure."""
     if df.empty:
         return df
@@ -171,31 +171,31 @@ def normaliser(df: pd.DataFrame) -> pd.DataFrame:
         log.warning("colonne 'Adj Close' absente — repli sur 'Close'")
         df["Adj Close"] = df["Close"]
 
-    attendues = ["Open", "High", "Low", "Close", "Adj Close", "Volume"]
-    manquantes = [c for c in attendues if c not in df.columns]
-    if manquantes:
+    expected = ["Open", "High", "Low", "Close", "Adj Close", "Volume"]
+    missing = [c for c in expected if c not in df.columns]
+    if missing:
         raise ValueError(f"colonnes manquantes dans la réponse : {manquantes}")
 
-    df = df[attendues].dropna(subset=["Close"])
+    df = df[expected].dropna(subset=["Close"])
     return df[~df.index.duplicated(keep="last")]
 
 
 # ---------------------------------------------------------------------
 #  Écriture
 # ---------------------------------------------------------------------
-def upsert_prix(cx: sqlite3.Connection, instrument_id: int, df: pd.DataFrame) -> int:
-    lignes = [
+def upsert_prices(cx: sqlite3.Connection, instrument_id: int, df: pd.DataFrame) -> int:
+    rows = [
         (
             instrument_id,
-            horodate.date().isoformat(),
-            _reel(r["Open"]), _reel(r["High"]), _reel(r["Low"]),
-            _reel(r["Close"]), _reel(r["Adj Close"]),
+            stamp.date().isoformat(),
+            _to_float(r["Open"]), _to_float(r["High"]), _to_float(r["Low"]),
+            _to_float(r["Close"]), _to_float(r["Adj Close"]),
             int(r["Volume"]) if pd.notna(r["Volume"]) else None,
             SOURCE,
         )
-        for horodate, r in df.iterrows()
+        for stamp, r in df.iterrows()
     ]
-    if not lignes:
+    if not rows:
         return 0
 
     cx.executemany(
@@ -214,18 +214,18 @@ def upsert_prix(cx: sqlite3.Connection, instrument_id: int, df: pd.DataFrame) ->
                source         = excluded.source,
                ingested_at    = excluded.ingested_at
         """,
-        lignes,
+        rows,
     )
-    return len(lignes)
+    return len(rows)
 
 
-def upsert_fx(cx: sqlite3.Connection, paire: str, df: pd.DataFrame) -> int:
-    lignes = [
-        (paire, h.date().isoformat(), _reel(r["Close"]), SOURCE)
+def upsert_fx(cx: sqlite3.Connection, pair: str, df: pd.DataFrame) -> int:
+    rows = [
+        (pair, h.date().isoformat(), _to_float(r["Close"]), SOURCE)
         for h, r in df.iterrows()
         if pd.notna(r["Close"])
     ]
-    if not lignes:
+    if not rows:
         return 0
     cx.executemany(
         """
@@ -236,42 +236,42 @@ def upsert_fx(cx: sqlite3.Connection, paire: str, df: pd.DataFrame) -> int:
                source      = excluded.source,
                ingested_at = excluded.ingested_at
         """,
-        lignes,
+        rows,
     )
-    return len(lignes)
+    return len(rows)
 
 
-def _reel(v) -> float | None:
+def _to_float(v) -> float | None:
     return float(v) if pd.notna(v) else None
 
 
 # ---------------------------------------------------------------------
 #  Orchestration
 # ---------------------------------------------------------------------
-def traiter(cx, inst: Instrument, *, full: bool, dry_run: bool) -> dict:
-    bilan = {"ticker": inst.ticker, "yahoo": inst.yahoo, "lignes": 0,
-             "debut": None, "fin": None, "statut": "ok"}
+def process(cx, inst: Instrument, *, full: bool, dry_run: bool) -> dict:
+    report = {"ticker": inst.ticker, "yahoo": inst.yahoo, "rows": 0,
+             "start": None, "end": None, "status": "ok"}
 
-    instrument_id = id_instrument(cx, inst)
-    derniere = None if full else derniere_date(cx, instrument_id)
-    depuis = derniere - timedelta(days=RECOUVREMENT_JOURS) if derniere else None
+    instrument_id = get_instrument_id(cx, inst)
+    last = None if full else last_stored_date(cx, instrument_id)
+    since = last - timedelta(days=OVERLAP_DAYS) if last else None
 
     if dry_run:
-        bilan["statut"] = f"simulé (depuis {depuis or 'origine'})"
-        return bilan
+        report["status"] = f"simulé (depuis {since or 'origine'})"
+        return report
 
-    df = normaliser(telecharger(inst.yahoo, depuis))
+    df = normalize(download(inst.yahoo, since))
 
     if df.empty:
         # Ne jamais traiter un retour vide comme un succès : c'est le symptôme
         # d'un symbole mort ou renommé, et l'ignorer laisserait un trou muet.
-        bilan["statut"] = "VIDE — symbole à revérifier"
+        report["status"] = "VIDE — symbole à revérifier"
         log.warning("%s (%s) : aucune donnée retournée", inst.ticker, inst.yahoo)
-        return bilan
+        return report
 
-    bilan["lignes"] = upsert_prix(cx, instrument_id, df)
-    bilan["debut"] = df.index.min().date().isoformat()
-    bilan["fin"] = df.index.max().date().isoformat()
+    report["rows"] = upsert_prices(cx, instrument_id, df)
+    report["start"] = df.index.min().date().isoformat()
+    report["end"] = df.index.max().date().isoformat()
 
     # Sur une passe complète, l'historique doit remonter au moins aussi loin que
     # ce qui avait été constaté à la résolution du symbole. S'il s'est nettement
@@ -280,63 +280,63 @@ def traiter(cx, inst: Instrument, *, full: bool, dry_run: bool) -> dict:
     # pas honorer. La tolérance absorbe le décalage normal de quelques jours
     # entre la première barre quotidienne et le repère mensuel du catalogue.
     if full:
-        ecart = (date.fromisoformat(bilan["debut"])
-                 - date.fromisoformat(inst.yahoo_depuis)).days
-        if ecart > TOLERANCE_HISTORIQUE_JOURS:
-            bilan["statut"] = f"historique raccourci de {ecart}j (attendu {inst.yahoo_depuis})"
+        gap = (date.fromisoformat(report["start"])
+                 - date.fromisoformat(inst.yahoo_since)).days
+        if gap > HISTORY_TOLERANCE_DAYS:
+            report["status"] = f"historique raccourci de {gap}j (attendu {inst.yahoo_since})"
             log.warning("%s : historique démarre le %s, attendu vers le %s",
-                        inst.ticker, bilan["debut"], inst.yahoo_depuis)
+                        inst.ticker, report["start"], inst.yahoo_since)
 
     cx.commit()
-    return bilan
+    return report
 
 
-def traiter_fx(cx, paire: str, symbole: str, *, full: bool, dry_run: bool) -> dict:
-    bilan = {"ticker": paire, "yahoo": symbole, "lignes": 0,
-             "debut": None, "fin": None, "statut": "ok"}
+def process_fx(cx, pair: str, symbol: str, *, full: bool, dry_run: bool) -> dict:
+    report = {"ticker": pair, "yahoo": symbol, "rows": 0,
+             "start": None, "end": None, "status": "ok"}
     if dry_run:
-        bilan["statut"] = "simulé"
-        return bilan
+        report["status"] = "simulé"
+        return report
 
     row = cx.execute(
-        "SELECT MAX(rate_date) AS d FROM fx_rates WHERE currency_pair = ?", (paire,)
+        "SELECT MAX(rate_date) AS d FROM fx_rates WHERE currency_pair = ?", (pair,)
     ).fetchone()
-    derniere = date.fromisoformat(row["d"]) if row and row["d"] else None
-    depuis = None if full or not derniere else derniere - timedelta(days=RECOUVREMENT_JOURS)
+    last = date.fromisoformat(row["d"]) if row and row["d"] else None
+    since = None if full or not last else last - timedelta(days=OVERLAP_DAYS)
 
-    df = normaliser(telecharger(symbole, depuis))
+    df = normalize(download(symbol, since))
     if df.empty:
-        bilan["statut"] = "VIDE"
-        return bilan
+        report["status"] = "VIDE"
+        return report
 
-    bilan["lignes"] = upsert_fx(cx, paire, df)
-    bilan["debut"] = df.index.min().date().isoformat()
-    bilan["fin"] = df.index.max().date().isoformat()
+    report["rows"] = upsert_fx(cx, pair, df)
+    report["start"] = df.index.min().date().isoformat()
+    report["end"] = df.index.max().date().isoformat()
     cx.commit()
-    return bilan
+    return report
 
 
-def afficher_bilan(bilans: list[dict]) -> None:
-    largeur = max((len(b["ticker"]) for b in bilans), default=8)
+def print_report(reports: list[dict]) -> None:
+    width = max((len(b["ticker"]) for b in reports), default=8)
     print("\n" + "─" * 78)
-    print(f"{'TICKER':<{largeur}}  {'SYMBOLE':<10} {'LIGNES':>7}  {'DÉBUT':<11}{'FIN':<11} STATUT")
+    print(f"{'TICKER':<{width}}  {'SYMBOLE':<10} {'LIGNES':>7}  {'DÉBUT':<11}{'FIN':<11} STATUT")
     print("─" * 78)
-    for b in sorted(bilans, key=lambda x: (x["statut"] == "ok", x["ticker"])):
-        print(f"{b['ticker']:<{largeur}}  {b['yahoo']:<10} {b['lignes']:>7}  "
-              f"{b['debut'] or '—':<11}{b['fin'] or '—':<11} {b['statut']}")
+    for b in sorted(reports, key=lambda x: (x["status"] == "ok", x["ticker"])):
+        print(f"{b['ticker']:<{width}}  {b['yahoo']:<10} {b['rows']:>7}  "
+              f"{b['start'] or '—':<11}{b['end'] or '—':<11} {b['status']}")
     print("─" * 78)
 
-    total = sum(b["lignes"] for b in bilans)
-    en_echec = [b for b in bilans if b["statut"] != "ok"]
-    print(f"{total} lignes écrites · {len(bilans) - len(en_echec)}/{len(bilans)} instruments OK")
-    if en_echec:
-        print(f"⚠  À vérifier : {', '.join(b['ticker'] for b in en_echec)}")
+    total = sum(b["rows"] for b in reports)
+    failed = [b for b in reports if b["status"] != "ok"]
+    print(f"{total} lignes écrites · {len(reports) - len(failed)}/{len(reports)} instruments OK")
+    if failed:
+        print(f"⚠  À vérifier : {', '.join(b['ticker'] for b in failed)}")
 
 
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("--db", type=Path, default=DB_DEFAUT)
+    p.add_argument("--db", type=Path, default=DEFAULT_DB)
     p.add_argument("--init", action="store_true", help="crée le schéma et charge le catalogue")
     p.add_argument("--full", action="store_true", help="rejoue tout l'historique")
     p.add_argument("--tickers", nargs="+", metavar="T", help="limite à ces tickers d'affichage")
@@ -351,53 +351,53 @@ def main(argv: list[str] | None = None) -> int:
         datefmt="%H:%M:%S",
     )
 
-    instruments = tous()
+    instruments = all_instruments()
     if args.tickers:
-        demandes = {t.upper() for t in args.tickers}
-        instruments = [i for i in instruments if i.ticker.upper() in demandes]
-        inconnus = demandes - {i.ticker.upper() for i in instruments}
-        if inconnus:
-            log.error("Ticker(s) absent(s) du catalogue : %s", ", ".join(sorted(inconnus)))
+        requested = {t.upper() for t in args.tickers}
+        instruments = [i for i in instruments if i.ticker.upper() in requested]
+        unknown = requested - {i.ticker.upper() for i in instruments}
+        if unknown:
+            log.error("Ticker(s) absent(s) du catalogue : %s", ", ".join(sorted(unknown)))
             return 2
 
     if not instruments:
         log.error("Aucun instrument à traiter.")
         return 2
 
-    cx = ouvrir(args.db)
+    cx = open_db(args.db)
     try:
         if args.init:
             init_schema(cx)
-        sync_catalogue(cx, tous())
+        sync_catalogue(cx, all_instruments())
 
         mode = "complet" if args.full else "incrémental"
         log.info("Ingestion %s — %d instruments -> %s", mode, len(instruments), args.db)
 
-        bilans = []
+        reports = []
         for n, inst in enumerate(instruments, 1):
             log.info("[%d/%d] %s (%s)", n, len(instruments), inst.ticker, inst.yahoo)
             try:
-                bilans.append(traiter(cx, inst, full=args.full, dry_run=args.dry_run))
+                reports.append(process(cx, inst, full=args.full, dry_run=args.dry_run))
             except Exception as exc:                  # noqa: BLE001
                 log.error("%s : %s", inst.ticker, exc)
-                bilans.append({"ticker": inst.ticker, "yahoo": inst.yahoo, "lignes": 0,
-                               "debut": None, "fin": None, "statut": f"ERREUR {exc}"})
-            time.sleep(PAUSE_ENTRE_TICKERS)
+                reports.append({"ticker": inst.ticker, "yahoo": inst.yahoo, "rows": 0,
+                               "start": None, "end": None, "status": f"ERREUR {exc}"})
+            time.sleep(PAUSE_BETWEEN_TICKERS)
 
         if args.fx:
-            for paire, symbole in FX_PAIRS.items():
-                log.info("change %s (%s)", paire, symbole)
+            for pair, symbol in FX_PAIRS.items():
+                log.info("change %s (%s)", pair, symbol)
                 try:
-                    bilans.append(traiter_fx(cx, paire, symbole,
+                    reports.append(process_fx(cx, pair, symbol,
                                              full=args.full, dry_run=args.dry_run))
                 except Exception as exc:              # noqa: BLE001
-                    log.error("%s : %s", paire, exc)
-                    bilans.append({"ticker": paire, "yahoo": symbole, "lignes": 0,
-                                   "debut": None, "fin": None, "statut": f"ERREUR {exc}"})
-                time.sleep(PAUSE_ENTRE_TICKERS)
+                    log.error("%s : %s", pair, exc)
+                    reports.append({"ticker": pair, "yahoo": symbol, "rows": 0,
+                                   "start": None, "end": None, "status": f"ERREUR {exc}"})
+                time.sleep(PAUSE_BETWEEN_TICKERS)
 
-        afficher_bilan(bilans)
-        return 1 if any(b["statut"] != "ok" for b in bilans) else 0
+        print_report(reports)
+        return 1 if any(b["status"] != "ok" for b in reports) else 0
     finally:
         cx.close()
 

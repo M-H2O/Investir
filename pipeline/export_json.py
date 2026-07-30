@@ -36,24 +36,24 @@ import sys
 from datetime import date
 from pathlib import Path
 
-RACINE = Path(__file__).parent
-DB_DEFAUT = RACINE / "boussole.db"
-SORTIE_DEFAUT = RACINE.parent / "data" / "cours.json"
+ROOT = Path(__file__).parent
+DEFAULT_DB = ROOT / "boussole.db"
+DEFAULT_OUTPUT = ROOT.parent / "data" / "cours.json"
 
 # 4 décimales : l'erreur relative retombe sous 1e-6, ce qui garantit que le
 # calcul JS retrouve les mêmes valeurs que le moteur Python de référence.
 # À 2 décimales l'écart devenait visible sur les rapports de prix.
-DECIMALES = 4
+DECIMALS = 4
 
 
-def exporter(db: Path, sortie: Path) -> dict:
+def export(db: Path, sortie: Path) -> dict:
     if not db.exists():
         raise SystemExit(f"Base introuvable : {db}\nLancez d'abord : python ingest.py --init --full")
 
     cx = sqlite3.connect(db)
     cx.row_factory = sqlite3.Row
 
-    lignes = cx.execute(
+    rows = cx.execute(
         """SELECT i.ticker, i.name, i.isin, i.currency, p.price_date, p.adjusted_close
            FROM prices_daily p JOIN instruments i USING(instrument_id)
            WHERE p.adjusted_close IS NOT NULL
@@ -61,22 +61,22 @@ def exporter(db: Path, sortie: Path) -> dict:
     ).fetchall()
     cx.close()
 
-    if not lignes:
+    if not rows:
         raise SystemExit("Aucune cotation en base — lancez d'abord ingest.py")
 
-    dates = sorted({r["price_date"] for r in lignes})
-    index_de = {d: n for n, d in enumerate(dates)}
+    dates = sorted({r["price_date"] for r in rows})
+    index_of = {d: n for n, d in enumerate(dates)}
 
-    brut: dict[str, dict] = {}
-    for r in lignes:
-        e = brut.setdefault(
+    raw: dict[str, dict] = {}
+    for r in rows:
+        e = raw.setdefault(
             r["ticker"],
             {"nom": r["name"], "isin": r["isin"], "devise": r["currency"], "points": {}},
         )
-        e["points"][index_de[r["price_date"]]] = round(r["adjusted_close"], DECIMALES)
+        e["points"][index_of[r["price_date"]]] = round(r["adjusted_close"], DECIMALS)
 
     instruments = {}
-    for ticker, e in sorted(brut.items()):
+    for ticker, e in sorted(raw.items()):
         positions = sorted(e["points"])
         i0, i1 = positions[0], positions[-1]
         instruments[ticker] = {
@@ -87,7 +87,7 @@ def exporter(db: Path, sortie: Path) -> dict:
             "prix": [e["points"].get(i) for i in range(i0, i1 + 1)],
         }
 
-    charge = {
+    payload = {
         "genere_le": date.today().isoformat(),
         "source": "Yahoo Finance (cours ajustes) via pipeline/ingest.py",
         "resolution": "quotidienne",
@@ -97,30 +97,30 @@ def exporter(db: Path, sortie: Path) -> dict:
 
     sortie.parent.mkdir(parents=True, exist_ok=True)
     sortie.write_text(
-        json.dumps(charge, separators=(",", ":"), ensure_ascii=False), encoding="utf-8"
+        json.dumps(payload, separators=(",", ":"), ensure_ascii=False), encoding="utf-8"
     )
-    return charge
+    return payload
 
 
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("--db", type=Path, default=DB_DEFAUT)
-    p.add_argument("--sortie", type=Path, default=SORTIE_DEFAUT)
+    p.add_argument("--db", type=Path, default=DEFAULT_DB)
+    p.add_argument("--sortie", type=Path, default=DEFAULT_OUTPUT)
     args = p.parse_args(argv)
 
-    charge = exporter(args.db, args.sortie)
-    poids = args.sortie.stat().st_size / 1024
+    payload = export(args.db, args.sortie)
+    size_kb = args.sortie.stat().st_size / 1024
 
     print(f"\n{args.sortie}")
-    print(f"  {len(charge['instruments'])} instruments · {len(charge['dates'])} dates "
-          f"· {poids:.0f} Ko")
-    print(f"  periode : {charge['dates'][0]} -> {charge['dates'][-1]}\n")
-    for t, e in charge["instruments"].items():
-        debut = charge["dates"][e["i0"]]
-        trous = sum(1 for v in e["prix"] if v is None)
-        print(f"  {t:<6} depuis {debut}  {len(e['prix']):>5} points"
-              + (f"  ({trous} jours non cotes, reportes)" if trous else ""))
+    print(f"  {len(payload['instruments'])} instruments · {len(payload['dates'])} dates "
+          f"· {size_kb:.0f} Ko")
+    print(f"  periode : {payload['dates'][0]} -> {payload['dates'][-1]}\n")
+    for t, e in payload["instruments"].items():
+        start = payload["dates"][e["i0"]]
+        gaps = sum(1 for v in e["prix"] if v is None)
+        print(f"  {t:<6} depuis {start}  {len(e['prix']):>5} points"
+              + (f"  ({gaps} jours non cotes, reportes)" if gaps else ""))
     return 0
 
 

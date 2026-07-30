@@ -23,7 +23,7 @@ class Instrument:
     exchange: str
     # Première cotation disponible chez Yahoo, constatée à la résolution.
     # Sert d'alerte : ce n'est PAS la date de création du fonds.
-    yahoo_depuis: str
+    yahoo_since: str
 
 
 ETFS: list[Instrument] = [
@@ -76,5 +76,5 @@ FX_PAIRS: dict[str, str] = {
 }
 
 
-def tous() -> list[Instrument]:
+def all_instruments() -> list[Instrument]:
     return ETFS + STOCKS

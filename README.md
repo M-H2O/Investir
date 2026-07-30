@@ -27,8 +27,8 @@ Le site est **statique** : il n'a pas de backend et ne peut pas lire SQLite.
 simulation se fait dans le navigateur (un curseur de dates croisé à des poids
 libres représente trop de combinaisons pour être précalculé).
 
-`pipeline/portefeuille.py` et le moteur JS du simulateur implémentent **le même
-calcul**. Le Python est la référence testée ; le JS est vérifié contre ses
+`pipeline/portefeuille.py` (fonction `simulate`) et le moteur JS du simulateur
+implémentent **le même calcul**. Le Python est la référence testée ; le JS est vérifié contre ses
 valeurs (écart constaté : 0,0001 € sur 11 475 €, soit l'arrondi de l'export).
 
 ---
@@ -106,6 +106,12 @@ Pour qu'il apparaisse aussi dans le comparateur d'ETF, ajouter la ligne
 correspondante au tableau `ETFS` dans `index.html` (même ticker).
 
 ---
+
+## Conventions
+
+Conformément à `CLAUDE.md` : **commentaires en français, identifiants en anglais**.
+Les classes CSS et les libellés d'interface restent en français, comme le reste
+du design system existant.
 
 ## Limites connues
 

@@ -2036,13 +2036,13 @@ const navBtns = document.querySelectorAll('.nav button');
 /* Redessin à brancher par le simulateur : un graphique tracé pendant que sa
    page est encore `display:none` mesure une largeur de 0. On le prévient donc
    au moment où sa page devient visible, plutôt que de deviner une largeur. */
-let auChangementDePage = null;
+let onPageChange = null;
 
 function goto(id){
   pages.forEach(p => p.classList.toggle('active', p.id === 'page-' + id));
   navBtns.forEach(b => b.setAttribute('aria-current', b.dataset.page === id ? 'true' : 'false'));
   window.scrollTo({top:0, behavior:'auto'});
-  if(typeof auChangementDePage === 'function') auChangementDePage(id);
+  if(typeof onPageChange === 'function') onPageChange(id);
 }
 navBtns.forEach(b => b.addEventListener('click', () => goto(b.dataset.page)));
 document.querySelectorAll('[data-goto]').forEach(el => {
@@ -2453,34 +2453,34 @@ restart.addEventListener('click', () => {
    SIMULATEUR — moteur de calcul + interface
    Le moteur reprend la sémantique de pipeline/portefeuille.py : achat
    unique, aucun rééquilibrage, cours ajustés, report du dernier cours
-   connu les jours non cotés. Toute divergence entre les deux serait un
+   connu les days non cotés. Toute divergence entre les deux serait un
    bug — les valeurs de référence sont testées côté Python.
    ===================================================================== */
 
-let COURS = null;               // contenu de data/cours.json
+let PRICES = null;               // contenu de data/cours.json
 const SERIES = {};              // {ticker: {i0, prix[] (reporté, sans trous)}}
 
-const euros = n => n.toLocaleString('fr-FR', {maximumFractionDigits:0}) + ' €';
-const euros2 = n => n.toLocaleString('fr-FR', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' €';
-const signe = n => (n >= 0 ? '+' : '−') + Math.abs(n).toLocaleString('fr-FR', {maximumFractionDigits:1});
-const dateFr = iso => {
+const formatEuros = n => n.toLocaleString('fr-FR', {maximumFractionDigits:0}) + ' €';
+const formatEuros2 = n => n.toLocaleString('fr-FR', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' €';
+const signed = n => (n >= 0 ? '+' : '−') + Math.abs(n).toLocaleString('fr-FR', {maximumFractionDigits:1});
+const formatDate = iso => {
   const [a,m,j] = iso.split('-');
   return `${j}/${m}/${a}`;
 };
 
 /* Report du dernier cours connu : deux places de cotation n'ont pas les
-   mêmes jours fériés, et un trou ne doit jamais valoir zéro. */
-function preparerSeries(){
-  for(const [t, e] of Object.entries(COURS.instruments)){
-    const plein = e.prix.slice();
-    for(let i = 1; i < plein.length; i++){
-      if(plein[i] === null || plein[i] === undefined) plein[i] = plein[i-1];
+   mêmes days fériés, et un trou ne doit jamais valoir zéro. */
+function prepareSeries(){
+  for(const [t, e] of Object.entries(PRICES.instruments)){
+    const filled = e.prix.slice();
+    for(let i = 1; i < filled.length; i++){
+      if(filled[i] === null || filled[i] === undefined) filled[i] = filled[i-1];
     }
-    SERIES[t] = {i0: e.i0, prix: plein, cote: e.prix};
+    SERIES[t] = {i0: e.i0, prix: filled, cote: e.prix};
   }
 }
 
-const prixA = (t, i) => {
+const priceAt = (t, i) => {
   const s = SERIES[t];
   if(!s || i < s.i0) return null;
   const k = Math.min(i - s.i0, s.prix.length - 1);
@@ -2488,7 +2488,7 @@ const prixA = (t, i) => {
 };
 
 /* Premier index >= depuis où le ticker a RÉELLEMENT coté (pas un report). */
-function premierCote(t, depuis){
+function firstQuotedIndex(t, depuis){
   const s = SERIES[t];
   for(let i = Math.max(depuis, s.i0); i < s.i0 + s.cote.length; i++){
     if(s.cote[i - s.i0] !== null && s.cote[i - s.i0] !== undefined) return i;
@@ -2496,195 +2496,195 @@ function premierCote(t, depuis){
   return -1;
 }
 
-function simuler(allocation, capital, iDebut, iFin){
+function simulate(allocation, capital, iStart, iEnd){
   const tickers = Object.keys(allocation);
   if(!tickers.length) return null;
 
   // Aligne tout le monde sur un même jour de calendrier réel.
-  let iDeb = iDebut;
+  let iEff = iStart;
   for(const t of tickers){
-    const p = premierCote(t, iDebut);
+    const p = firstQuotedIndex(t, iStart);
     if(p < 0) return null;
-    if(p > iDeb) iDeb = p;
+    if(p > iEff) iEff = p;
   }
-  if(iDeb >= iFin) return null;
+  if(iEff >= iEnd) return null;
 
-  const investi = {}, pDebut = {};
+  const invested = {}, startPrices = {};
   for(const t of tickers){
-    investi[t] = capital * allocation[t] / 100;
-    pDebut[t] = prixA(t, iDeb);
-    if(!pDebut[t]) return null;
+    invested[t] = capital * allocation[t] / 100;
+    startPrices[t] = priceAt(t, iEff);
+    if(!startPrices[t]) return null;
   }
 
-  const serie = new Array(iFin - iDeb + 1);
-  for(let i = iDeb; i <= iFin; i++){
+  const series = new Array(iEnd - iEff + 1);
+  for(let i = iEff; i <= iEnd; i++){
     let total = 0;
-    for(const t of tickers) total += investi[t] * prixA(t, i) / pDebut[t];
-    serie[i - iDeb] = total;
+    for(const t of tickers) total += invested[t] * priceAt(t, i) / startPrices[t];
+    series[i - iEff] = total;
   }
 
-  const detail = tickers.map(t => {
-    const pf = prixA(t, iFin);
+  const holdings = tickers.map(t => {
+    const endPrice = priceAt(t, iEnd);
     return {
       ticker: t,
-      poids: allocation[t],
-      prixDebut: pDebut[t],
-      prixFin: pf,
-      investi: investi[t],
-      valeur: investi[t] * pf / pDebut[t]
+      weight: allocation[t],
+      startPrice: startPrices[t],
+      endPrice,
+      invested: invested[t],
+      value: invested[t] * endPrice / startPrices[t]
     };
   });
 
-  const valeurFinale = detail.reduce((a,d) => a + d.valeur, 0);
+  const finalValue = holdings.reduce((a, h) => a + h.value, 0);
   return {
-    iDebut: iDeb, iFin,
-    dateDebut: COURS.dates[iDeb], dateFin: COURS.dates[iFin],
-    capital, valeurFinale, detail, serie,
-    gain: valeurFinale - capital,
-    gainPct: (valeurFinale / capital - 1) * 100
+    iStart: iEff, iEnd,
+    startDate: PRICES.dates[iEff], endDate: PRICES.dates[iEnd],
+    capital, finalValue, holdings, series,
+    gain: finalValue - capital,
+    gainPct: (finalValue / capital - 1) * 100
   };
 }
 
 /* ---------- État de l'interface ---------- */
-const simEtat = {lignes: [{ticker:'IWDA', poids:60}, {ticker:'MEUD', poids:40}], iDebut: 0};
+const simState = {rows: [{ticker:'IWDA', weight:60}, {ticker:'MEUD', weight:40}], iStart: 0};
 
-const elLignes = document.getElementById('alloc-lignes');
+const elRows = document.getElementById('alloc-lignes');
 const elTotal = document.getElementById('alloc-total');
 const elAdd = document.getElementById('alloc-add');
-const elEgal = document.getElementById('alloc-egal');
+const elEqualise = document.getElementById('alloc-egal');
 const elCapital = document.getElementById('sim-capital');
 const elDate = document.getElementById('sim-date');
-const elDateVal = document.getElementById('sim-date-val');
-const elDuree = document.getElementById('sim-duree');
-const elContrainte = document.getElementById('sim-contrainte');
-const elSortie = document.getElementById('sim-sortie');
+const elDateLabel = document.getElementById('sim-date-val');
+const elDuration = document.getElementById('sim-duree');
+const elConstraint = document.getElementById('sim-contrainte');
+const elOutput = document.getElementById('sim-sortie');
 
-const nomDe = t => (ETFS.find(e => e.ticker === t) || {}).nom
-                || (COURS.instruments[t] || {}).nom || t;
+const nameOf = t => (ETFS.find(e => e.ticker === t) || {}).nom
+                || (PRICES.instruments[t] || {}).nom || t;
 
-function dessinerLignes(){
-  const dispo = Object.keys(COURS.instruments).sort((a,b) => nomDe(a).localeCompare(nomDe(b),'fr'));
-  elLignes.innerHTML = simEtat.lignes.map((l, n) => `
+function renderRows(){
+  const available = Object.keys(PRICES.instruments).sort((a,b) => nameOf(a).localeCompare(nameOf(b),'fr'));
+  elRows.innerHTML = simState.rows.map((l, n) => `
     <div class="alloc-ligne">
       <select data-n="${n}" aria-label="ETF de la ligne ${n+1}">
-        ${dispo.map(t => `<option value="${t}"${t===l.ticker?' selected':''}>${nomDe(t)}</option>`).join('')}
+        ${available.map(t => `<option value="${t}"${t===l.ticker?' selected':''}>${nameOf(t)}</option>`).join('')}
       </select>
-      <input class="poids" type="number" data-n="${n}" value="${l.poids}" min="0" max="100" step="1"
+      <input class="poids" type="number" data-n="${n}" value="${l.weight}" min="0" max="100" step="1"
              aria-label="Poids de la ligne ${n+1} en pourcent">
       <button class="sup" data-n="${n}" aria-label="Retirer la ligne ${n+1}"
-              ${simEtat.lignes.length <= 1 ? 'disabled style="opacity:.3"' : ''}>×</button>
+              ${simState.rows.length <= 1 ? 'disabled style="opacity:.3"' : ''}>×</button>
     </div>`).join('');
 
-  const total = simEtat.lignes.reduce((a,l) => a + (+l.poids || 0), 0);
+  const total = simState.rows.reduce((a,l) => a + (+l.weight || 0), 0);
   elTotal.textContent = total.toLocaleString('fr-FR', {maximumFractionDigits:1}) + ' %';
   elTotal.classList.toggle('ko', Math.abs(total - 100) > 0.1);
-  elAdd.disabled = simEtat.lignes.length >= 6;
+  elAdd.disabled = simState.rows.length >= 6;
 }
 
 /* La borne basse du curseur est la profondeur d'historique la PLUS COURTE
-   des lignes retenues : on refuse de proposer une date qu'on ne saurait pas
+   des lignes retenues : on refuse de proposer une date qu'on ne saurait step
    honorer, plutôt que de démarrer ailleurs sans le dire. */
-function majBornes(){
-  const tickers = simEtat.lignes.map(l => l.ticker);
+function updateBounds(){
+  const tickers = simState.rows.map(l => l.ticker);
   const iMin = Math.max(...tickers.map(t => SERIES[t].i0));
-  const iMax = COURS.dates.length - 1;
-  const iPlancher = Math.min(iMin, iMax - 1);
+  const iMax = PRICES.dates.length - 1;
+  const iFloor = Math.min(iMin, iMax - 1);
 
-  elDate.min = iPlancher;
-  elDate.max = Math.max(iPlancher, iMax - 20);   // au moins ~1 mois de recul
-  if(simEtat.iDebut < iPlancher) simEtat.iDebut = iPlancher;
-  if(simEtat.iDebut > +elDate.max) simEtat.iDebut = +elDate.max;
-  elDate.value = simEtat.iDebut;
+  elDate.min = iFloor;
+  elDate.max = Math.max(iFloor, iMax - 20);   // au moins ~1 mois de recul
+  if(simState.iStart < iFloor) simState.iStart = iFloor;
+  if(simState.iStart > +elDate.max) simState.iStart = +elDate.max;
+  elDate.value = simState.iStart;
 
-  document.getElementById('sim-borne-min').textContent = dateFr(COURS.dates[iPlancher]);
-  document.getElementById('sim-borne-max').textContent = dateFr(COURS.dates[+elDate.max]);
+  document.getElementById('sim-borne-min').textContent = formatDate(PRICES.dates[iFloor]);
+  document.getElementById('sim-borne-max').textContent = formatDate(PRICES.dates[+elDate.max]);
 
   // Qui bride la profondeur ?
-  const bridant = tickers.filter(t => SERIES[t].i0 === iMin);
-  const plusAncien = Math.min(...tickers.map(t => SERIES[t].i0));
-  if(bridant.length && iMin > plusAncien){
-    elContrainte.hidden = false;
-    elContrainte.innerHTML = `Vous ne pouvez pas remonter avant le
-      <strong>${dateFr(COURS.dates[iMin])}</strong> : ${bridant.map(nomDe).join(', ')}
+  const limiting = tickers.filter(t => SERIES[t].i0 === iMin);
+  const oldest = Math.min(...tickers.map(t => SERIES[t].i0));
+  if(limiting.length && iMin > oldest){
+    elConstraint.hidden = false;
+    elConstraint.innerHTML = `Vous ne pouvez pas remonter avant le
+      <strong>${formatDate(PRICES.dates[iMin])}</strong> : ${limiting.map(nameOf).join(', ')}
       n'a pas d'historique disponible avant cette date. Retirez cette ligne pour remonter plus loin.`;
   } else {
-    elContrainte.hidden = true;
+    elConstraint.hidden = true;
   }
 }
 
-function allocationValide(){
+function validAllocation(){
   const alloc = {};
-  for(const l of simEtat.lignes){
-    const p = +l.poids || 0;
+  for(const l of simState.rows){
+    const p = +l.weight || 0;
     if(p > 0) alloc[l.ticker] = (alloc[l.ticker] || 0) + p;
   }
   const total = Object.values(alloc).reduce((a,b) => a+b, 0);
   return Math.abs(total - 100) <= 0.1 ? alloc : null;
 }
 
-function rendreSimulation(){
-  majBornes();
-  simEtat.iDebut = +elDate.value;
-  elDateVal.childNodes[0].nodeValue = dateFr(COURS.dates[simEtat.iDebut]) + ' ';
+function runSimulation(){
+  updateBounds();
+  simState.iStart = +elDate.value;
+  elDateLabel.childNodes[0].nodeValue = formatDate(PRICES.dates[simState.iStart]) + ' ';
 
-  const iFin = COURS.dates.length - 1;
-  const jours = (new Date(COURS.dates[iFin]) - new Date(COURS.dates[simEtat.iDebut])) / 86400000;
-  const annees = jours / 365.25;
-  elDuree.textContent = annees >= 1
-    ? `soit ${annees.toFixed(1).replace('.', ',')} ans de détention`
-    : `soit ${Math.round(jours/30.4)} mois de détention`;
+  const iEnd = PRICES.dates.length - 1;
+  const days = (new Date(PRICES.dates[iEnd]) - new Date(PRICES.dates[simState.iStart])) / 86400000;
+  const years = days / 365.25;
+  elDuration.textContent = years >= 1
+    ? `soit ${years.toFixed(1).replace('.', ',')} ans de détention`
+    : `soit ${Math.round(days/30.4)} mois de détention`;
 
-  const alloc = allocationValide();
+  const alloc = validAllocation();
   const capital = Math.max(0, +elCapital.value || 0);
 
   if(!alloc){
-    elSortie.innerHTML = `<div class="sim-vide">Ajustez les poids pour atteindre 100 % —
+    elOutput.innerHTML = `<div class="sim-vide">Ajustez les poids pour atteindre 100 % —
       le total actuel ne permet pas de calculer une répartition.</div>`;
     return;
   }
   if(capital <= 0){
-    elSortie.innerHTML = `<div class="sim-vide">Saisissez un montant à investir.</div>`;
+    elOutput.innerHTML = `<div class="sim-vide">Saisissez un montant à investir.</div>`;
     return;
   }
 
-  const r = simuler(alloc, capital, simEtat.iDebut, iFin);
+  const r = simulate(alloc, capital, simState.iStart, iEnd);
   if(!r){
-    elSortie.innerHTML = `<div class="sim-vide">Pas assez d'historique commun pour ces lignes
+    elOutput.innerHTML = `<div class="sim-vide">Pas assez d'historique commun pour ces lignes
       à cette date.</div>`;
     return;
   }
-  afficherResultat(r);
+  renderResult(r);
 }
 
-function afficherResultat(r){
+function renderResult(r){
   const pos = r.gain >= 0;
-  const annees = (new Date(r.dateFin) - new Date(r.dateDebut)) / 86400000 / 365.25;
+  const years = (new Date(r.endDate) - new Date(r.startDate)) / 86400000 / 365.25;
   // Taux annualisé : seulement au-delà d'un an, sinon le chiffre est trompeur.
-  const tca = annees >= 1 ? (Math.pow(r.valeurFinale / r.capital, 1/annees) - 1) * 100 : null;
+  const cagr = years >= 1 ? (Math.pow(r.finalValue / r.capital, 1/years) - 1) * 100 : null;
 
-  elSortie.innerHTML = `
+  elOutput.innerHTML = `
     <div class="sim-hero">
       <div class="hero-bloc">
-        <div class="hero-label">Valeur au ${dateFr(r.dateFin)}</div>
-        <div class="hero-val">${euros(r.valeurFinale)}</div>
+        <div class="hero-label">Valeur au ${formatDate(r.endDate)}</div>
+        <div class="hero-val">${formatEuros(r.finalValue)}</div>
       </div>
       <div class="hero-bloc sec">
         <div class="hero-label">Écart</div>
-        <div class="hero-val sec ${pos?'pos':'neg'}">${signe(r.gain)} €</div>
+        <div class="hero-val sec ${pos?'pos':'neg'}">${signed(r.gain)} €</div>
       </div>
       <div class="hero-bloc sec">
         <div class="hero-label">Soit</div>
-        <div class="hero-val sec ${pos?'pos':'neg'}">${signe(r.gainPct)} %</div>
+        <div class="hero-val sec ${pos?'pos':'neg'}">${signed(r.gainPct)} %</div>
       </div>
-      ${tca !== null ? `
+      ${cagr !== null ? `
       <div class="hero-bloc sec">
         <div class="hero-label">Par an en moyenne</div>
-        <div class="hero-val sec ${tca>=0?'pos':'neg'}">${signe(tca)} %</div>
+        <div class="hero-val sec ${cagr>=0?'pos':'neg'}">${signed(cagr)} %</div>
       </div>` : ''}
     </div>
 
     <div class="chart-carte">
-      <div class="chart-titre">Trajectoire de ${euros(r.capital)} investis le ${dateFr(r.dateDebut)}</div>
+      <div class="chart-titre">Trajectoire de ${formatEuros(r.capital)} investis le ${formatDate(r.startDate)}</div>
       <div class="chart-sous">Valeur du portefeuille, cours ajustés, hors frais et fiscalité</div>
       <div class="chart-hote" id="chart-hote">
         <div class="chart-info" id="chart-info"></div>
@@ -2702,16 +2702,16 @@ function afficherResultat(r){
           </tr>
         </thead>
         <tbody>
-          ${r.detail.map(d => {
-            const ecart = (d.valeur/d.investi - 1) * 100;
+          ${r.holdings.map(d => {
+            const delta = (d.value/d.invested - 1) * 100;
             return `<tr>
-              <td><div class="etf-nom">${nomDe(d.ticker)}</div><div class="etf-ticker">${d.ticker}</div></td>
-              <td class="mono">${d.poids.toLocaleString('fr-FR')} %</td>
-              <td class="mono">${euros(d.investi)}</td>
-              <td class="mono">${d.prixDebut.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
-              <td class="mono">${d.prixFin.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
-              <td class="mono">${euros2(d.valeur)}</td>
-              <td class="mono ${ecart>=0?'pos':'neg'}">${signe(ecart)} %</td>
+              <td><div class="etf-nom">${nameOf(d.ticker)}</div><div class="etf-ticker">${d.ticker}</div></td>
+              <td class="mono">${d.weight.toLocaleString('fr-FR')} %</td>
+              <td class="mono">${formatEuros(d.invested)}</td>
+              <td class="mono">${d.startPrice.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+              <td class="mono">${d.endPrice.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+              <td class="mono">${formatEuros2(d.value)}</td>
+              <td class="mono ${delta>=0?'pos':'neg'}">${signed(delta)} %</td>
             </tr>`;
           }).join('')}
         </tbody>
@@ -2719,212 +2719,212 @@ function afficherResultat(r){
     </div>
 
     <p class="detail-src" style="margin-top:14px">
-      Cours ajustés relevés jusqu'au ${dateFr(COURS.dates[COURS.dates.length-1])}
-      (export du ${dateFr(COURS.genere_le)}). Frais de courtage, fiscalité et inflation non déduits.
+      Cours ajustés relevés jusqu'au ${formatDate(PRICES.dates[PRICES.dates.length-1])}
+      (export du ${formatDate(PRICES.genere_le)}). Frais de courtage, fiscalité et inflation non déduits.
     </p>`;
 
-  tracerCourbe(r);
-  const basc = document.getElementById('chart-basc');
-  const tbl = document.getElementById('chart-table');
-  basc.addEventListener('click', () => {
-    const ouvert = tbl.hidden;
-    if(ouvert && !tbl.innerHTML) tbl.innerHTML = tableauTrajectoire(r);
-    tbl.hidden = !ouvert;
-    basc.textContent = ouvert ? 'Masquer le tableau' : 'Afficher les valeurs sous forme de tableau';
+  drawChart(r);
+  const toggle = document.getElementById('chart-basc');
+  const tableBox = document.getElementById('chart-table');
+  toggle.addEventListener('click', () => {
+    const isOpen = tableBox.hidden;
+    if(isOpen && !tableBox.innerHTML) tableBox.innerHTML = trajectoryTable(r);
+    tableBox.hidden = !isOpen;
+    toggle.textContent = isOpen ? 'Masquer le tableau' : 'Afficher les valeurs sous forme de tableau';
   });
 }
 
 /* Table-view : un point par an + le point final, pour que toute valeur du
    graphique reste atteignable sans survol (et au clavier). */
-function tableauTrajectoire(r){
-  const pts = [];
-  let anneeVue = null;
-  for(let i = 0; i < r.serie.length; i++){
-    const iso = COURS.dates[r.iDebut + i];
+function trajectoryTable(r){
+  const points = [];
+  let seenYear = null;
+  for(let i = 0; i < r.series.length; i++){
+    const iso = PRICES.dates[r.iStart + i];
     const an = iso.slice(0,4);
-    if(an !== anneeVue){ pts.push([iso, r.serie[i]]); anneeVue = an; }
+    if(an !== seenYear){ points.push([iso, r.series[i]]); seenYear = an; }
   }
-  const dernier = COURS.dates[r.iFin];
-  if(pts[pts.length-1][0] !== dernier) pts.push([dernier, r.serie[r.serie.length-1]]);
+  const lastDate = PRICES.dates[r.iEnd];
+  if(points[points.length-1][0] !== lastDate) points.push([lastDate, r.series[r.series.length-1]]);
   return `<div class="table-scroll" style="margin-top:12px">
     <table><thead><tr><th>Date</th><th>Valeur du portefeuille</th><th>Écart cumulé</th></tr></thead>
-    <tbody>${pts.map(([d,v]) => `<tr>
-      <td class="mono">${dateFr(d)}</td>
-      <td class="mono">${euros2(v)}</td>
-      <td class="mono ${v>=r.capital?'pos':'neg'}">${signe((v/r.capital-1)*100)} %</td>
+    <tbody>${points.map(([d,v]) => `<tr>
+      <td class="mono">${formatDate(d)}</td>
+      <td class="mono">${formatEuros2(v)}</td>
+      <td class="mono ${v>=r.capital?'pos':'neg'}">${signed((v/r.capital-1)*100)} %</td>
     </tr>`).join('')}</tbody></table></div>`;
 }
 
 /* ---------- Tracé de la courbe ---------- */
-let detacherChart = null;
-let redessinerChart = null;
+let detachChart = null;
+let redrawChart = null;
 
 // Le graphique ne peut être mesuré que lorsque son onglet est affiché.
-auChangementDePage = id => {
-  if(id === 'simulateur' && typeof redessinerChart === 'function') redessinerChart();
+onPageChange = id => {
+  if(id === 'simulateur' && typeof redrawChart === 'function') redrawChart();
 };
 
-function tracerCourbe(r){
-  const hote = document.getElementById('chart-hote');
-  if(!hote) return;
-  if(detacherChart) detacherChart();
+function drawChart(r){
+  const host = document.getElementById('chart-hote');
+  if(!host) return;
+  if(detachChart) detachChart();
 
-  const dessiner = () => {
-    const L = hote.clientWidth || 640;
+  const draw = () => {
+    const L = host.clientWidth || 640;
     const H = Math.max(230, Math.min(340, Math.round(L * 0.42)));
     const M = {haut:14, droite:64, bas:26, gauche:56};
     const pl = L - M.gauche - M.droite;
     const ph = H - M.haut - M.bas;
 
-    const vals = r.serie;
-    let vmin = Math.min(...vals, r.capital), vmax = Math.max(...vals, r.capital);
-    const marge = (vmax - vmin) * 0.12 || vmax * 0.05;
-    vmin -= marge; vmax += marge;
+    const vals = r.series;
+    let vMin = Math.min(...vals, r.capital), vMax = Math.max(...vals, r.capital);
+    const pad = (vMax - vMin) * 0.12 || vMax * 0.05;
+    vMin -= pad; vMax += pad;
 
     const x = i => M.gauche + (i / (vals.length - 1)) * pl;
-    const y = v => M.haut + ph - ((v - vmin) / (vmax - vmin)) * ph;
+    const y = v => M.haut + ph - ((v - vMin) / (vMax - vMin)) * ph;
 
     // Graduations rondes
     const ticks = [];
-    const brut = (vmax - vmin) / 4;
+    const brut = (vMax - vMin) / 4;
     const mag = Math.pow(10, Math.floor(Math.log10(brut)));
-    const pas = [1,2,2.5,5,10].map(m => m*mag).find(p => p >= brut) || mag*10;
-    for(let v = Math.ceil(vmin/pas)*pas; v <= vmax; v += pas) ticks.push(v);
+    const step = [1,2,2.5,5,10].map(m => m*mag).find(p => p >= brut) || mag*10;
+    for(let v = Math.ceil(vMin/step)*step; v <= vMax; v += step) ticks.push(v);
 
-    const chemin = vals.map((v,i) => `${i?'L':'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join('');
-    const aire = `${chemin}L${x(vals.length-1).toFixed(1)},${(M.haut+ph).toFixed(1)}`
+    const linePath = vals.map((v,i) => `${i?'L':'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join('');
+    const areaPath = `${linePath}L${x(vals.length-1).toFixed(1)},${(M.haut+ph).toFixed(1)}`
                + `L${x(0).toFixed(1)},${(M.haut+ph).toFixed(1)}Z`;
 
     // ~6 repères de dates, alignés sur des points réels
     const nbX = Math.max(2, Math.min(6, Math.floor(pl / 90)));
-    const repX = Array.from({length:nbX}, (_,k) => Math.round(k*(vals.length-1)/(nbX-1)));
+    const xMarks = Array.from({length:nbX}, (_,k) => Math.round(k*(vals.length-1)/(nbX-1)));
 
     const svg = `
       <svg viewBox="0 0 ${L} ${H}" width="${L}" height="${H}" role="img"
-           aria-label="Trajectoire du portefeuille de ${dateFr(r.dateDebut)} à ${dateFr(r.dateFin)}, de ${euros(r.capital)} à ${euros(r.valeurFinale)}">
+           aria-label="Trajectoire du portefeuille de ${formatDate(r.startDate)} à ${formatDate(r.endDate)}, de ${formatEuros(r.capital)} à ${formatEuros(r.finalValue)}">
         ${ticks.map(v => `<line class="grille" x1="${M.gauche}" x2="${M.gauche+pl}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}"/>`).join('')}
         ${ticks.map(v => `<text class="axe-txt" x="${M.gauche-9}" y="${(y(v)+4).toFixed(1)}" text-anchor="end">${Math.round(v).toLocaleString('fr-FR')}</text>`).join('')}
-        <path class="traj-aire" d="${aire}"/>
+        <path class="traj-aire" d="${areaPath}"/>
         <line class="seuil" x1="${M.gauche}" x2="${M.gauche+pl}" y1="${y(r.capital).toFixed(1)}" y2="${y(r.capital).toFixed(1)}"/>
         <text class="seuil-txt" x="${M.gauche+pl+7}" y="${(y(r.capital)+4).toFixed(1)}">investi</text>
-        <path class="traj" d="${chemin}"/>
+        <path class="traj" d="${linePath}"/>
         <circle class="bout" cx="${x(vals.length-1).toFixed(1)}" cy="${y(vals[vals.length-1]).toFixed(1)}" r="4.5"/>
         <line class="axe" x1="${M.gauche}" x2="${M.gauche+pl}" y1="${M.haut+ph}" y2="${M.haut+ph}"/>
-        ${repX.map(i => `<text class="axe-txt" x="${x(i).toFixed(1)}" y="${H-6}" text-anchor="${i===0?'start':i===vals.length-1?'end':'middle'}">${COURS.dates[r.iDebut+i].slice(0,7).split('-').reverse().join('/')}</text>`).join('')}
+        ${xMarks.map(i => `<text class="axe-txt" x="${x(i).toFixed(1)}" y="${H-6}" text-anchor="${i===0?'start':i===vals.length-1?'end':'middle'}">${PRICES.dates[r.iStart+i].slice(0,7).split('-').reverse().join('/')}</text>`).join('')}
         <line class="viseur" id="viseur" y1="${M.haut}" y2="${M.haut+ph}" x1="0" x2="0" style="opacity:0"/>
         <circle class="bout" id="viseur-pt" r="4.5" style="opacity:0"/>
         <rect id="capteur" x="${M.gauche}" y="${M.haut}" width="${pl}" height="${ph}" fill="transparent"/>
       </svg>`;
 
-    const info = hote.querySelector('.chart-info');
-    hote.innerHTML = svg;
-    hote.appendChild(info);
+    const tip = host.querySelector('.chart-info');
+    host.innerHTML = svg;
+    host.appendChild(tip);
 
-    const capteur = hote.querySelector('#capteur');
-    const viseur = hote.querySelector('#viseur');
-    const point = hote.querySelector('#viseur-pt');
+    const hitArea = host.querySelector('#capteur');
+    const crosshair = host.querySelector('#viseur');
+    const point = host.querySelector('#viseur-pt');
 
-    const bouger = ev => {
-      const box = hote.querySelector('svg').getBoundingClientRect();
+    const onMove = ev => {
+      const box = host.querySelector('svg').getBoundingClientRect();
       const px = (ev.touches ? ev.touches[0].clientX : ev.clientX) - box.left;
       let i = Math.round(((px - M.gauche) / pl) * (vals.length - 1));
       i = Math.max(0, Math.min(vals.length - 1, i));
       const vx = x(i), vy = y(vals[i]);
-      viseur.setAttribute('x1', vx); viseur.setAttribute('x2', vx); viseur.style.opacity = .7;
+      crosshair.setAttribute('x1', vx); crosshair.setAttribute('x2', vx); crosshair.style.opacity = .7;
       point.setAttribute('cx', vx); point.setAttribute('cy', vy); point.style.opacity = 1;
-      const ecart = (vals[i]/r.capital - 1) * 100;
-      info.innerHTML = `<div class="d">${dateFr(COURS.dates[r.iDebut+i])}</div>
-                        <div class="v">${euros2(vals[i])}</div>
-                        <div class="d">${signe(ecart)} % vs investi</div>`;
-      info.classList.add('on');
-      const li = info.offsetWidth;
-      info.style.left = Math.max(0, Math.min(L - li, vx - li/2)) + 'px';
-      info.style.top = Math.max(0, vy - info.offsetHeight - 12) + 'px';
+      const delta = (vals[i]/r.capital - 1) * 100;
+      tip.innerHTML = `<div class="d">${formatDate(PRICES.dates[r.iStart+i])}</div>
+                        <div class="v">${formatEuros2(vals[i])}</div>
+                        <div class="d">${signed(delta)} % vs investi</div>`;
+      tip.classList.add('on');
+      const li = tip.offsetWidth;
+      tip.style.left = Math.max(0, Math.min(L - li, vx - li/2)) + 'px';
+      tip.style.top = Math.max(0, vy - tip.offsetHeight - 12) + 'px';
     };
-    const partir = () => {
-      viseur.style.opacity = 0; point.style.opacity = 0; info.classList.remove('on');
+    const onLeave = () => {
+      crosshair.style.opacity = 0; point.style.opacity = 0; tip.classList.remove('on');
     };
-    capteur.addEventListener('mousemove', bouger);
-    capteur.addEventListener('touchmove', bouger, {passive:true});
-    capteur.addEventListener('mouseleave', partir);
-    capteur.addEventListener('touchend', partir);
+    hitArea.addEventListener('mousemove', onMove);
+    hitArea.addEventListener('touchmove', onMove, {passive:true});
+    hitArea.addEventListener('mouseleave', onLeave);
+    hitArea.addEventListener('touchend', onLeave);
   };
 
   // Le tracé part toujours de la largeur RÉELLE du conteneur. Tant que la page
   // du simulateur est masquée, cette largeur vaut 0 : on ne dessine pas (une
   // largeur de repli serait ensuite figée et le SVG étiré). C'est `goto` qui
   // rappellera au moment où l'onglet devient visible.
-  const dessinerSiPret = () => {
-    if(!hote.isConnected || hote.clientWidth < 40) return false;
-    dessiner();
+  const drawIfReady = () => {
+    if(!host.isConnected || host.clientWidth < 40) return false;
+    draw();
     return true;
   };
-  redessinerChart = dessinerSiPret;
-  dessinerSiPret();
+  redrawChart = drawIfReady;
+  drawIfReady();
 
   // ResizeObserver pour le redimensionnement du conteneur (ouverture d'un
   // panneau, changement de colonne), `resize` en filet de sécurité : si l'un
-  // des deux ne se déclenche pas, le graphique garde sa taille réelle au lieu
+  // des deux ne se déclenche step, le graphique garde sa taille réelle au lieu
   // d'être silencieusement déformé.
-  const ro = new ResizeObserver(() => dessinerSiPret());
-  ro.observe(hote);
-  const surResize = () => dessinerSiPret();
-  window.addEventListener('resize', surResize);
-  detacherChart = () => { ro.disconnect(); window.removeEventListener('resize', surResize); };
+  const ro = new ResizeObserver(() => drawIfReady());
+  ro.observe(host);
+  const onResize = () => drawIfReady();
+  window.addEventListener('resize', onResize);
+  detachChart = () => { ro.disconnect(); window.removeEventListener('resize', onResize); };
 }
 
 /* ---------- Branchements ---------- */
-elLignes.addEventListener('change', ev => {
+elRows.addEventListener('change', ev => {
   const n = +ev.target.dataset.n;
-  if(ev.target.tagName === 'SELECT') simEtat.lignes[n].ticker = ev.target.value;
-  else if(ev.target.classList.contains('poids')) simEtat.lignes[n].poids = +ev.target.value || 0;
-  dessinerLignes(); rendreSimulation();
+  if(ev.target.tagName === 'SELECT') simState.rows[n].ticker = ev.target.value;
+  else if(ev.target.classList.contains('poids')) simState.rows[n].weight = +ev.target.value || 0;
+  renderRows(); runSimulation();
 });
-elLignes.addEventListener('input', ev => {
+elRows.addEventListener('input', ev => {
   if(!ev.target.classList.contains('poids')) return;
-  simEtat.lignes[+ev.target.dataset.n].poids = +ev.target.value || 0;
-  const total = simEtat.lignes.reduce((a,l) => a + (+l.poids||0), 0);
+  simState.rows[+ev.target.dataset.n].weight = +ev.target.value || 0;
+  const total = simState.rows.reduce((a,l) => a + (+l.weight||0), 0);
   elTotal.textContent = total.toLocaleString('fr-FR',{maximumFractionDigits:1}) + ' %';
   elTotal.classList.toggle('ko', Math.abs(total-100) > 0.1);
-  rendreSimulation();
+  runSimulation();
 });
-elLignes.addEventListener('click', ev => {
+elRows.addEventListener('click', ev => {
   const b = ev.target.closest('.sup');
   if(!b || b.disabled) return;
-  simEtat.lignes.splice(+b.dataset.n, 1);
-  dessinerLignes(); rendreSimulation();
+  simState.rows.splice(+b.dataset.n, 1);
+  renderRows(); runSimulation();
 });
 elAdd.addEventListener('click', () => {
-  const pris = new Set(simEtat.lignes.map(l => l.ticker));
-  const libre = Object.keys(COURS.instruments).find(t => !pris.has(t));
-  if(!libre) return;
-  simEtat.lignes.push({ticker: libre, poids: 0});
-  dessinerLignes(); rendreSimulation();
+  const taken = new Set(simState.rows.map(l => l.ticker));
+  const free = Object.keys(PRICES.instruments).find(t => !taken.has(t));
+  if(!free) return;
+  simState.rows.push({ticker: free, weight: 0});
+  renderRows(); runSimulation();
 });
-elEgal.addEventListener('click', () => {
-  const n = simEtat.lignes.length;
-  const base = Math.floor(100 / n * 10) / 10;
-  simEtat.lignes.forEach(l => l.poids = base);
+elEqualise.addEventListener('click', () => {
+  const n = simState.rows.length;
+  const share = Math.floor(100 / n * 10) / 10;
+  simState.rows.forEach(l => l.weight = share);
   // le reliquat d'arrondi va sur la première ligne, pour tomber pile à 100
-  simEtat.lignes[0].poids = +(100 - base * (n - 1)).toFixed(1);
-  dessinerLignes(); rendreSimulation();
+  simState.rows[0].weight = +(100 - share * (n - 1)).toFixed(1);
+  renderRows(); runSimulation();
 });
-elCapital.addEventListener('input', rendreSimulation);
+elCapital.addEventListener('input', runSimulation);
 document.querySelectorAll('.sim-preset button').forEach(b => {
-  b.addEventListener('click', () => { elCapital.value = b.dataset.capital; rendreSimulation(); });
+  b.addEventListener('click', () => { elCapital.value = b.dataset.capital; runSimulation(); });
 });
-elDate.addEventListener('input', () => { simEtat.iDebut = +elDate.value; rendreSimulation(); });
+elDate.addEventListener('input', () => { simState.iStart = +elDate.value; runSimulation(); });
 
 /* ---------- Chargement des cours ---------- */
 fetch('data/cours.json')
   .then(r => { if(!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
   .then(j => {
-    COURS = j;
-    preparerSeries();
+    PRICES = j;
+    prepareSeries();
     // Position de départ : ~5 ans en arrière si l'historique le permet.
-    simEtat.iDebut = Math.max(0, COURS.dates.length - 1 - 1260);
-    dessinerLignes();
-    rendreSimulation();
+    simState.iStart = Math.max(0, PRICES.dates.length - 1 - 1260);
+    renderRows();
+    runSimulation();
   })
   .catch(err => {
     document.getElementById('sim-vide').innerHTML = `

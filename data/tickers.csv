@@ -1,0 +1,21 @@
+yahoo_symbol,ticker,name,isin,asset_type,currency,exchange,active
+IWDA.AS,IWDA,iShares Core MSCI World,IE00B4L5Y983,etf,EUR,Amsterdam,oui
+VWCE.DE,VWCE,Vanguard FTSE All-World (acc.),IE00BK5BQT80,etf,EUR,XETRA,oui
+VWRL.AS,VWRL,Vanguard FTSE All-World (dist.),IE00B3RBWM25,etf,EUR,Amsterdam,oui
+WEBN.DE,WEBN,Amundi Prime All Country World,IE0003XJA0J9,etf,EUR,XETRA,oui
+CW8.PA,CW8,Amundi MSCI World (PEA),LU1681043599,etf,EUR,Paris,oui
+WPEA.PA,WPEA,iShares MSCI World Swap PEA,IE0002XZSHO1,etf,EUR,Paris,oui
+EWLD.PA,EWLD,Amundi PEA Monde,FR0011869353,etf,EUR,Paris,oui
+TDIV.AS,TDIV,VanEck Morningstar Dev. Dividend,NL0011683594,etf,EUR,Amsterdam,oui
+SXR8.DE,CSPX,iShares Core S&P 500,IE00B5BMR087,etf,EUR,XETRA,oui
+SPYL.DE,SPYL,SPDR S&P 500,IE000XZSV718,etf,EUR,XETRA,oui
+PSP5.PA,PE500,Amundi PEA S&P 500,FR0011871128,etf,EUR,Paris,oui
+ESE.PA,ESE,BNP Paribas Easy S&P 500 (PEA),FR0011550185,etf,EUR,Paris,oui
+PUST.PA,PANX,Amundi PEA Nasdaq-100,FR0011871110,etf,EUR,Paris,oui
+MEUD.PA,MEUD,Amundi Stoxx Europe 600 (PEA),LU0908500753,etf,EUR,Paris,oui
+IMAE.AS,IMAE,iShares Core MSCI Europe,IE00B4K48X80,etf,EUR,Amsterdam,oui
+CACC.PA,CACC,Amundi CAC 40 (PEA),FR0013380607,etf,EUR,Paris,oui
+IS3N.DE,EIMI,iShares Core MSCI EM IMI,IE00BKM4GZ66,etf,EUR,XETRA,oui
+PAEEM.PA,PAEEM,Amundi PEA Emergent ESG Transition,FR0013412020,etf,EUR,Paris,oui
+0GGH.L,AGGH,iShares Core Global Aggregate (EUR-H),IE00BDBRDM35,etf,EUR,LSE,oui
+MTD.PA,EM710,Amundi Euro Government Bond 7-10Y,LU1287023185,etf,EUR,Paris,oui

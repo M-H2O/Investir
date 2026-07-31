@@ -1,70 +1,192 @@
-"""Catalogue des instruments à ingérer.
+"""Catalogue des instruments, lu depuis `data/tickers.csv`.
 
-Les symboles Yahoo ci-dessous ont été RÉSOLUS par recherche ISIN puis vérifiés
-un par un (devise, place, profondeur d'historique) — ils ne sont pas déduits du
-ticker d'affichage, qui ne correspond presque jamais.
+La liste se pilote à la main dans ce CSV — éditable dans Excel, Google Sheets
+ou directement sur GitHub — sans jamais toucher au code. Le fichier reste du
+texte : les diffs GitHub restent lisibles et un conflit reste résoluble, ce
+qu'un classeur .xlsx ne permet pas.
 
-Règle de sélection : à ISIN égal, on retient la ligne cotée EN EUROS et la plus
-profonde en historique. Le simulateur raisonne en euros ; passer par le change
-ajouterait une source d'erreur là où une cotation native existe.
+Seule la colonne `yahoo_symbol` est OBLIGATOIRE. Tout le reste est facultatif
+et sera complété automatiquement depuis Yahoo à l'ingestion (devise, place,
+type, nom). Un fichier d'une seule colonne est donc parfaitement valide.
+
+Colonnes reconnues
+------------------
+    yahoo_symbol   obligatoire — le symbole Yahoo, ex. SXR8.DE, 0GGH.L, AAPL
+                   ATTENTION : ce n'est presque jamais le ticker d'affichage
+                   (CSPX -> SXR8.DE). Le résoudre par ISIN :
+                   https://query1.finance.yahoo.com/v1/finance/search?q=<ISIN>
+    ticker         nom court affiché sur le site ; par défaut le symbole
+                   sans son suffixe de place (SXR8.DE -> SXR8)
+    name           libellé long ; récupéré depuis Yahoo si laissé vide
+    isin           informatif, Yahoo ne le fournit pas de façon fiable
+    asset_type     'etf' ou 'stock' ; déduit de Yahoo si vide
+    currency       devise de cotation ; déduite de Yahoo si vide
+    exchange       place de cotation ; déduite de Yahoo si vide
+    active         'non' pour retirer une ligne du site sans la supprimer
+                   du fichier ; toute autre valeur (ou vide) = active
+
+Le séparateur (`,` ou `;`) est détecté automatiquement : Excel en configuration
+française enregistre les CSV avec des points-virgules, et le fichier resterait
+illisible sans cette détection.
 """
 
+from __future__ import annotations
+
+import csv
+import io
 from dataclasses import dataclass
+from pathlib import Path
+
+CATALOGUE_PATH = Path(__file__).parent.parent / "data" / "tickers.csv"
+
+REQUIRED_COLUMN = "yahoo_symbol"
+KNOWN_COLUMNS = {
+    "yahoo_symbol", "ticker", "name", "isin",
+    "asset_type", "currency", "exchange", "active",
+}
+# Valeurs comprises comme « ligne désactivée ». Tout le reste vaut actif :
+# une case vide ne doit jamais faire disparaître un instrument en silence.
+FALSY = {"non", "no", "n", "0", "false", "faux", "inactif", "inactive"}
+
+
+class CatalogueError(Exception):
+    """Le fichier est inutilisable — on refuse de deviner ce qu'il voulait dire."""
 
 
 @dataclass(frozen=True)
 class Instrument:
-    ticker: str        # ticker d'affichage, celui du comparateur
-    yahoo: str         # symbole de récupération Yahoo
-    isin: str
-    name: str
-    asset_type: str    # 'etf' | 'stock'
-    currency: str
-    exchange: str
-    # Première cotation disponible chez Yahoo, constatée à la résolution.
-    # Sert d'alerte : ce n'est PAS la date de création du fonds.
-    yahoo_since: str
+    yahoo: str                       # symbole de récupération Yahoo
+    ticker: str                      # ticker d'affichage
+    name: str | None = None          # complété depuis Yahoo si absent
+    isin: str | None = None
+    asset_type: str | None = None
+    currency: str | None = None
+    exchange: str | None = None
+    active: bool = True
+
+    @property
+    def needs_resolution(self) -> bool:
+        """Reste-t-il des champs à aller chercher chez Yahoo ?"""
+        return not all([self.name, self.asset_type, self.currency, self.exchange])
 
 
-ETFS: list[Instrument] = [
-    # --- Monde ---------------------------------------------------------
-    Instrument("IWDA",  "IWDA.AS", "IE00B4L5Y983", "iShares Core MSCI World",             "etf", "EUR", "Amsterdam", "2009-09-30"),
-    Instrument("VWCE",  "VWCE.DE", "IE00BK5BQT80", "Vanguard FTSE All-World (acc.)",      "etf", "EUR", "XETRA",     "2019-07-28"),
-    Instrument("VWRL",  "VWRL.AS", "IE00B3RBWM25", "Vanguard FTSE All-World (dist.)",     "etf", "EUR", "Amsterdam", "2012-05-31"),
-    Instrument("WEBN",  "WEBN.DE", "IE0003XJA0J9", "Amundi Prime All Country World",      "etf", "EUR", "XETRA",     "2024-07-14"),
-    Instrument("CW8",   "CW8.PA",  "LU1681043599", "Amundi MSCI World (PEA)",             "etf", "EUR", "Paris",     "2009-06-30"),
-    Instrument("WPEA",  "WPEA.PA", "IE0002XZSHO1", "iShares MSCI World Swap PEA",         "etf", "EUR", "Paris",     "2024-03-31"),
-    Instrument("EWLD",  "EWLD.PA", "FR0011869353", "Amundi PEA Monde",                    "etf", "EUR", "Paris",     "2024-03-10"),
-    Instrument("TDIV",  "TDIV.AS", "NL0011683594", "VanEck Morningstar Dev. Dividend",    "etf", "EUR", "Amsterdam", "2016-05-31"),
+def _sniff_delimiter(sample: str) -> str:
+    """Point-virgule ou virgule ? On tranche sur la ligne d'en-tête.
 
-    # --- USA -----------------------------------------------------------
-    Instrument("CSPX",  "SXR8.DE", "IE00B5BMR087", "iShares Core S&P 500",                "etf", "EUR", "XETRA",     "2010-05-31"),
-    Instrument("SPYL",  "SPYL.DE", "IE000XZSV718", "SPDR S&P 500",                        "etf", "EUR", "XETRA",     "2023-10-29"),
-    Instrument("PE500", "PSP5.PA", "FR0011871128", "Amundi PEA S&P 500",                  "etf", "EUR", "Paris",     "2014-05-31"),
-    Instrument("ESE",   "ESE.PA",  "FR0011550185", "BNP Paribas Easy S&P 500 (PEA)",      "etf", "EUR", "Paris",     "2013-09-30"),
-    Instrument("PANX",  "PUST.PA", "FR0011871110", "Amundi PEA Nasdaq-100",               "etf", "EUR", "Paris",     "2014-05-31"),
+    csv.Sniffer se trompe sur un fichier d'une seule colonne sans séparateur ;
+    compter sur l'en-tête est plus sûr pour le format simple qu'on attend ici.
+    """
+    header = sample.splitlines()[0] if sample.splitlines() else ""
+    return ";" if header.count(";") > header.count(",") else ","
 
-    # --- Europe --------------------------------------------------------
-    Instrument("MEUD",  "MEUD.PA", "LU0908500753", "Amundi Stoxx Europe 600 (PEA)",       "etf", "EUR", "Paris",     "2024-02-18"),
-    Instrument("IMAE",  "IMAE.AS", "IE00B4K48X80", "iShares Core MSCI Europe",            "etf", "EUR", "Amsterdam", "2009-10-31"),
-    Instrument("CACC",  "CACC.PA", "FR0013380607", "Amundi CAC 40 (PEA)",                 "etf", "EUR", "Paris",     "2018-12-09"),
 
-    # --- Émergents -----------------------------------------------------
-    Instrument("EIMI",  "IS3N.DE", "IE00BKM4GZ66", "iShares Core MSCI EM IMI",            "etf", "EUR", "XETRA",     "2014-06-30"),
-    Instrument("PAEEM", "PAEEM.PA", "FR0013412020", "Amundi PEA Emergent ESG Transition", "etf", "EUR", "Paris",     "2019-04-21"),
+def _clean(value) -> str | None:
+    """Normalise une cellule. Tolère autre chose qu'une chaîne : quand une ligne
+    compte plus de champs que d'en-têtes (virgule surnuméraire laissée par un
+    tableur), csv.DictReader range le surplus dans une LISTE sous la clé None.
+    """
+    if value is None:
+        return None
+    if isinstance(value, (list, tuple)):
+        value = " ".join(v for v in value if v)
+    value = str(value).strip().strip('"').strip()
+    return value or None
 
-    # --- Obligations ---------------------------------------------------
-    Instrument("AGGH",  "0GGH.L",  "IE00BDBRDM35", "iShares Core Global Aggregate (EUR-H)", "etf", "EUR", "LSE",     "2017-11-20"),
-    Instrument("EM710", "MTD.PA",  "LU1287023185", "Amundi Euro Government Bond 7-10Y",   "etf", "EUR", "Paris",     "2009-01-31"),
-]
 
-# Actions individuelles : à compléter au fil de l'eau. Le script les traite
-# exactement comme les ETF — seul `asset_type` change.
-# Attention : une action américaine cote en USD, ce qui rendra `fx_rates`
-# nécessaire pour simuler en euros (voir FX_PAIRS).
-STOCKS: list[Instrument] = [
-    # Instrument("AAPL", "AAPL", "US0378331005", "Apple Inc.", "stock", "USD", "NASDAQ", "1980-12-12"),
-]
+def load(path: Path | None = None) -> list[Instrument]:
+    """Lit le catalogue. Lève `CatalogueError` avec le numéro de ligne fautif
+    plutôt que d'ingérer silencieusement une liste incomplète."""
+    path = path or CATALOGUE_PATH
+    if not path.exists():
+        raise CatalogueError(
+            f"Catalogue introuvable : {path}\n"
+            f"Créez-le avec au minimum une colonne '{REQUIRED_COLUMN}'."
+        )
+
+    # utf-8-sig retire le BOM qu'Excel ajoute systématiquement en tête.
+    text = path.read_text(encoding="utf-8-sig")
+    if not text.strip():
+        raise CatalogueError(f"Catalogue vide : {path}")
+
+    reader = csv.DictReader(io.StringIO(text), delimiter=_sniff_delimiter(text))
+    if not reader.fieldnames:
+        raise CatalogueError(f"Catalogue sans ligne d'en-tête : {path}")
+
+    # En-têtes tolérants à la casse et aux espaces ajoutés par un tableur.
+    headers = {(h or "").strip().lower(): h for h in reader.fieldnames}
+    if REQUIRED_COLUMN not in headers:
+        raise CatalogueError(
+            f"Colonne '{REQUIRED_COLUMN}' absente de {path.name}.\n"
+            f"Colonnes trouvées : {', '.join(reader.fieldnames)}"
+        )
+    unknown = set(headers) - KNOWN_COLUMNS - {""}
+    if unknown:
+        raise CatalogueError(
+            f"Colonne(s) non reconnue(s) dans {path.name} : {', '.join(sorted(unknown))}.\n"
+            f"Attendu : {', '.join(sorted(KNOWN_COLUMNS))}"
+        )
+
+    get = lambda row, col: _clean(row.get(headers[col])) if col in headers else None
+
+    instruments: list[Instrument] = []
+    seen_symbols: dict[str, int] = {}
+    seen_tickers: dict[str, int] = {}
+
+    for line_no, row in enumerate(reader, start=2):   # 1 = en-tête
+        symbol = get(row, "yahoo_symbol")
+        if symbol is None:
+            if any(_clean(v) for v in row.values()):
+                raise CatalogueError(
+                    f"{path.name} ligne {line_no} : '{REQUIRED_COLUMN}' est vide "
+                    f"alors que la ligne contient des données."
+                )
+            continue                                  # ligne totalement vide : on passe
+
+        if symbol in seen_symbols:
+            raise CatalogueError(
+                f"{path.name} ligne {line_no} : symbole '{symbol}' déjà présent "
+                f"ligne {seen_symbols[symbol]}."
+            )
+        seen_symbols[symbol] = line_no
+
+        # Par défaut, le ticker d'affichage est le symbole sans suffixe de place.
+        ticker = get(row, "ticker") or symbol.split(".")[0]
+        if ticker in seen_tickers:
+            raise CatalogueError(
+                f"{path.name} ligne {line_no} : ticker d'affichage '{ticker}' déjà "
+                f"utilisé ligne {seen_tickers[ticker]}. Renseignez une colonne "
+                f"'ticker' distincte pour les départager."
+            )
+        seen_tickers[ticker] = line_no
+
+        active_raw = get(row, "active")
+        asset_type = get(row, "asset_type")
+        if asset_type and asset_type.lower() not in {"etf", "stock"}:
+            raise CatalogueError(
+                f"{path.name} ligne {line_no} : asset_type '{asset_type}' invalide "
+                f"(attendu 'etf' ou 'stock')."
+            )
+
+        instruments.append(Instrument(
+            yahoo=symbol,
+            ticker=ticker,
+            name=get(row, "name"),
+            isin=get(row, "isin"),
+            asset_type=asset_type.lower() if asset_type else None,
+            currency=get(row, "currency"),
+            exchange=get(row, "exchange"),
+            active=(active_raw or "").lower() not in FALSY,
+        ))
+
+    if not instruments:
+        raise CatalogueError(f"{path.name} ne contient aucun instrument.")
+    return instruments
+
+
+def all_instruments(path: Path | None = None) -> list[Instrument]:
+    """Les seuls instruments actifs — c'est ce que le pipeline doit traiter."""
+    return [i for i in load(path) if i.active]
+
 
 # Paires de change, ingérées dans `fx_rates`. Inutiles tant que tout cote en
 # euros ; à activer dès l'ajout d'instruments en devise étrangère.
@@ -74,7 +196,3 @@ FX_PAIRS: dict[str, str] = {
     "EUR/CHF": "EURCHF=X",
     "EUR/GBP": "EURGBP=X",
 }
-
-
-def all_instruments() -> list[Instrument]:
-    return ETFS + STOCKS

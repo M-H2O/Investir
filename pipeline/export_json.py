@@ -36,6 +36,8 @@ import sys
 from datetime import date
 from pathlib import Path
 
+from catalogue import all_instruments
+
 ROOT = Path(__file__).parent
 DEFAULT_DB = ROOT / "boussole.db"
 DEFAULT_OUTPUT = ROOT.parent / "data" / "cours.json"
@@ -50,16 +52,42 @@ def export(db: Path, sortie: Path) -> dict:
     if not db.exists():
         raise SystemExit(f"Base introuvable : {db}\nLancez d'abord : python ingest.py --init --full")
 
+    # L'export suit le CATALOGUE, pas la base : une ligne retirée de
+    # data/tickers.csv (ou passée à active=non) disparaît du site à la première
+    # régénération, sans qu'il faille purger la base. L'historique reste stocké,
+    # donc réactiver la ligne plus tard ne coûte aucun re-téléchargement.
+    catalogue = {i.yahoo: i for i in all_instruments()}
+
     cx = sqlite3.connect(db)
     cx.row_factory = sqlite3.Row
 
     rows = cx.execute(
-        """SELECT i.ticker, i.name, i.isin, i.currency, p.price_date, p.adjusted_close
+        """SELECT i.ticker, i.name, i.isin, i.currency, i.yahoo_symbol,
+                  p.price_date, p.adjusted_close
            FROM prices_daily p JOIN instruments i USING(instrument_id)
            WHERE p.adjusted_close IS NOT NULL
            ORDER BY p.price_date"""
     ).fetchall()
     cx.close()
+
+    rows = [r for r in rows if r["yahoo_symbol"] in catalogue]
+    absents = [y for y in catalogue if not any(r["yahoo_symbol"] == y for r in rows)]
+    if absents:
+        print(f"  ⚠  au catalogue mais sans cours en base : {', '.join(absents)}"
+              f"\n     -> lancez `python ingest.py` pour les récupérer\n")
+
+    # Le simulateur additionne des montants sans convertir : mélanger des lignes
+    # cotées dans des devises différentes produirait un total dénué de sens. On
+    # le signale ici, au moment où la ligne entre dans le site.
+    devises = {r["ticker"]: r["currency"] for r in rows}
+    hors_euro = {t: c for t, c in devises.items() if (c or "").upper() != "EUR"}
+    if hors_euro:
+        detail = ", ".join(f"{t} en {c}" for t, c in sorted(hors_euro.items()))
+        print(f"  ⚠  DEVISE : {detail}.\n"
+              f"     Le simulateur ne convertit pas les devises — il avertira à "
+              f"l'écran si l'utilisateur mélange.\n"
+              f"     Préférez une ligne de cotation en euros du même fonds "
+              f"(recherche par ISIN).\n")
 
     if not rows:
         raise SystemExit("Aucune cotation en base — lancez d'abord ingest.py")

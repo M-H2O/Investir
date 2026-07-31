@@ -11,10 +11,11 @@ vendu, aucune commission, aucun conseil personnalisé.**
 ```
 index.html          Le site entier (HTML + CSS + JS, sans dépendance externe)
 data/
-  cours.json        Cours quotidiens exportés — c'est CE fichier que lit le site
+  tickers.csv       LA LISTE — éditable à la main, c'est le seul fichier à toucher
+  cours.json        Cours quotidiens exportés (GÉNÉRÉ, ne pas éditer)
 pipeline/
   schema.sql        Schéma SQLite + vue prices_weekly
-  catalogue.py      Les 20 ETF et leurs symboles Yahoo (résolus et vérifiés)
+  catalogue.py      Lecteur de data/tickers.csv (validation, valeurs par défaut)
   ingest.py         Récupération des cours -> boussole.db
   export_json.py    boussole.db -> data/cours.json
   portefeuille.py   Moteur de calcul de portefeuille (référence)
@@ -64,6 +65,7 @@ python export_json.py
 |---|---|
 | `python ingest.py --full` | Rejoue tout l'historique au lieu de l'incrémental |
 | `python ingest.py --tickers CSPX IWDA` | Limite à quelques instruments |
+| `python ingest.py --dry-run` | Montre notamment les lignes détectées comme NOUVEAU |
 | `python ingest.py --dry-run` | Montre ce qui serait fait, n'écrit rien |
 | `python ingest.py --fx` | Ajoute les paires de change (inutile tant que tout cote en euros) |
 
@@ -90,20 +92,59 @@ leurs données étant inscrites directement dans la page.
 
 ---
 
-## Ajouter un instrument
+## Gérer la liste d'instruments — `data/tickers.csv`
+
+Toute la liste se pilote depuis ce seul fichier, **sans toucher au code**.
+Éditez-le dans Excel, Google Sheets, ou directement sur GitHub.
+
+**Une seule colonne est obligatoire : `yahoo_symbol`.** Le reste se complète
+automatiquement depuis Yahoo à l'ingestion. Un fichier valide peut donc tenir
+en deux lignes :
+
+```csv
+yahoo_symbol
+SXR8.DE
+```
+
+| Colonne | Rôle |
+|---|---|
+| `yahoo_symbol` | **Obligatoire.** Le symbole Yahoo (`SXR8.DE`, `0GGH.L`, `AAPL`) |
+| `ticker` | Nom court affiché ; par défaut le symbole sans son suffixe de place |
+| `name` | Libellé long ; récupéré depuis Yahoo si vide |
+| `isin` | Informatif (Yahoo ne le fournit pas de façon fiable) |
+| `asset_type` | `etf` ou `stock` ; déduit si vide |
+| `currency`, `exchange` | Déduits si vides |
+| `active` | `non` retire la ligne du site sans la supprimer du fichier |
+
+### Ajouter un instrument
 
 1. Résoudre le **symbole Yahoo** — ce n'est presque jamais le ticker
    d'affichage (`CSPX` → `SXR8.DE`, `PE500` → `PSP5.PA`, `AGGH` → `0GGH.L`).
    La recherche par ISIN fonctionne bien :
    `https://query1.finance.yahoo.com/v1/finance/search?q=<ISIN>`
-2. Vérifier devise, place et profondeur d'historique avant de l'inscrire.
-   À ISIN égal, préférer la ligne cotée **en euros** : cela évite d'ajouter une
-   conversion de change au calcul.
-3. Ajouter une entrée dans `pipeline/catalogue.py` (`ETFS` ou `STOCKS`).
-4. Rejouer `ingest.py --full --tickers <TICKER>` puis `export_json.py`.
+2. Ajouter une ligne au CSV avec ce symbole.
+3. `python ingest.py` — la ligne est détectée comme nouvelle et **tout son
+   historique est rapatrié**, sans avoir à penser à `--full`.
+4. `python export_json.py`, puis committer `tickers.csv` et `cours.json`.
 
-Pour qu'il apparaisse aussi dans le comparateur d'ETF, ajouter la ligne
-correspondante au tableau `ETFS` dans `index.html` (même ticker).
+### Retirer un instrument
+
+Supprimez sa ligne, ou passez `active` à `non`, puis relancez `export_json.py`.
+Il disparaît du site à la régénération suivante. Son historique **reste en
+base** : le réactiver plus tard ne coûte aucun re-téléchargement.
+
+### Attention à la devise
+
+Le simulateur additionne des montants **sans appliquer de taux de change**. À
+ISIN égal, préférez toujours la ligne cotée **en euros**. Si vous ajoutez un
+instrument dans une autre devise, `export_json.py` vous prévient en console et
+le simulateur affiche un avertissement dès que l'utilisateur mélange les
+devises — mais aucune conversion n'est faite.
+
+> Attention aussi à `GBp` : c'est le **pence**, pas la livre. Un facteur 100.
+
+Pour qu'un instrument apparaisse aussi dans le comparateur d'ETF (onglet
+distinct), ajouter la ligne correspondante au tableau `ETFS` dans `index.html`.
 
 ---
 

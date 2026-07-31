@@ -19,13 +19,14 @@ import logging
 import sqlite3
 import sys
 import time
+from dataclasses import replace
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
 import pandas as pd
 import yfinance as yf
 
-from catalogue import FX_PAIRS, Instrument, all_instruments
+from catalogue import FX_PAIRS, CatalogueError, Instrument, all_instruments
 
 ROOT = Path(__file__).parent
 DEFAULT_DB = ROOT / "boussole.db"
@@ -36,9 +37,9 @@ SOURCE = "yahoo"
 # historique récent a posteriori, et l'upsert absorbe la reprise sans doublon.
 OVERLAP_DAYS = 7
 
-# Les repères `yahoo_depuis` du catalogue proviennent d'une requête mensuelle :
-# ils précèdent la première barre quotidienne de quelques jours. On ne signale
-# donc qu'un écart franc, pas ce décalage de calendrier.
+# On compare l'historique récupéré à celui déjà en base. Un écart de quelques
+# jours est normal (calendriers de cotation) : seul un recul franc signale que
+# Yahoo a changé de ligne de cotation, ce qui mérite un examen.
 HISTORY_TOLERANCE_DAYS = 31
 
 MAX_ATTEMPTS = 3
@@ -67,8 +68,8 @@ _configure_yfinance()
 # ---------------------------------------------------------------------
 #  Base
 # ---------------------------------------------------------------------
-def open_db(chemin: Path) -> sqlite3.Connection:
-    cx = sqlite3.connect(chemin)
+def open_db(path: Path) -> sqlite3.Connection:
+    cx = sqlite3.connect(path)
     cx.row_factory = sqlite3.Row
     cx.execute("PRAGMA foreign_keys = ON")
     return cx
@@ -80,20 +81,62 @@ def init_schema(cx: sqlite3.Connection) -> None:
     log.info("Schéma appliqué (%s)", SCHEMA.name)
 
 
+def resolve_metadata(inst: Instrument) -> Instrument:
+    """Complète depuis Yahoo les champs laissés vides dans le CSV.
+
+    Ça permet au catalogue de ne contenir qu'une colonne de symboles : le reste
+    (devise, place, type, nom) est de toute façon connu de la source, et le
+    saisir à la main serait à la fois pénible et une occasion de se tromper.
+    En cas d'échec on garde des valeurs neutres plutôt que d'interrompre toute
+    l'ingestion pour un libellé manquant.
+    """
+    if not inst.needs_resolution:
+        return inst
+
+    currency = exchange = asset_type = name = None
+    try:
+        tk = yf.Ticker(inst.yahoo)
+        fast = tk.fast_info
+        currency = fast.get("currency")
+        exchange = fast.get("exchange")
+        quote_type = (fast.get("quoteType") or "").upper()
+        asset_type = "etf" if quote_type == "ETF" else "stock"
+        if not inst.name:
+            info = tk.info
+            name = info.get("longName") or info.get("shortName")
+    except Exception as exc:                          # noqa: BLE001 — API tierce
+        log.warning("%s : métadonnées non résolues (%s)", inst.yahoo, exc)
+
+    return replace(
+        inst,
+        name=inst.name or name or inst.ticker,
+        asset_type=inst.asset_type or asset_type or "etf",
+        currency=inst.currency or currency or "?",
+        exchange=inst.exchange or exchange or "?",
+    )
+
+
 def sync_catalogue(cx: sqlite3.Connection, instruments: list[Instrument]) -> None:
-    """Insère ou met à jour la dimension. Ne touche jamais aux prix."""
+    """Insère ou met à jour la dimension. Ne touche jamais aux prix.
+
+    Le conflit porte sur `yahoo_symbol`, seule clé réellement stable : le ticker
+    d'affichage et la place peuvent être corrigés dans le CSV sans que la ligne
+    doive être considérée comme un nouvel instrument (ce qui dupliquerait tout
+    son historique).
+    """
     for i in instruments:
         cx.execute(
             """
             INSERT INTO instruments
                    (ticker, yahoo_symbol, isin, name, asset_type, currency, exchange)
             VALUES (?, ?, ?, ?, ?, ?, ?)
-            ON CONFLICT (ticker, exchange) DO UPDATE SET
-                   yahoo_symbol = excluded.yahoo_symbol,
-                   isin         = excluded.isin,
-                   name         = excluded.name,
-                   asset_type   = excluded.asset_type,
-                   currency     = excluded.currency
+            ON CONFLICT (yahoo_symbol) DO UPDATE SET
+                   ticker     = excluded.ticker,
+                   isin       = excluded.isin,
+                   name       = excluded.name,
+                   asset_type = excluded.asset_type,
+                   currency   = excluded.currency,
+                   exchange   = excluded.exchange
             """,
             (i.ticker, i.yahoo, i.isin, i.name, i.asset_type, i.currency, i.exchange),
         )
@@ -103,8 +146,7 @@ def sync_catalogue(cx: sqlite3.Connection, instruments: list[Instrument]) -> Non
 
 def get_instrument_id(cx: sqlite3.Connection, inst: Instrument) -> int:
     row = cx.execute(
-        "SELECT instrument_id FROM instruments WHERE ticker = ? AND exchange = ?",
-        (inst.ticker, inst.exchange),
+        "SELECT instrument_id FROM instruments WHERE yahoo_symbol = ?", (inst.yahoo,)
     ).fetchone()
     if row is None:
         raise LookupError(
@@ -116,6 +158,14 @@ def get_instrument_id(cx: sqlite3.Connection, inst: Instrument) -> int:
 def last_stored_date(cx: sqlite3.Connection, instrument_id: int) -> date | None:
     row = cx.execute(
         "SELECT MAX(price_date) AS d FROM prices_daily WHERE instrument_id = ?",
+        (instrument_id,),
+    ).fetchone()
+    return date.fromisoformat(row["d"]) if row and row["d"] else None
+
+
+def first_stored_date(cx: sqlite3.Connection, instrument_id: int) -> date | None:
+    row = cx.execute(
+        "SELECT MIN(price_date) AS d FROM prices_daily WHERE instrument_id = ?",
         (instrument_id,),
     ).fetchone()
     return date.fromisoformat(row["d"]) if row and row["d"] else None
@@ -250,14 +300,22 @@ def _to_float(v) -> float | None:
 # ---------------------------------------------------------------------
 def process(cx, inst: Instrument, *, full: bool, dry_run: bool) -> dict:
     report = {"ticker": inst.ticker, "yahoo": inst.yahoo, "rows": 0,
-             "start": None, "end": None, "status": "ok"}
+             "start": None, "end": None, "status": "ok", "ok": True}
 
     instrument_id = get_instrument_id(cx, inst)
+    previous_start = first_stored_date(cx, instrument_id)
     last = None if full else last_stored_date(cx, instrument_id)
     since = last - timedelta(days=OVERLAP_DAYS) if last else None
 
+    # Un instrument ajouté au catalogue n'a encore aucune cotation : on rapatrie
+    # d'office tout son historique, sans avoir à penser à passer --full.
+    is_new = previous_start is None
+    if is_new:
+        since = None
+
     if dry_run:
-        report["status"] = f"simulé (depuis {since or 'origine'})"
+        report["status"] = ("NOUVEAU — historique complet" if is_new
+                            else f"simulé (depuis {since or 'origine'})")
         return report
 
     df = normalize(download(inst.yahoo, since))
@@ -266,6 +324,7 @@ def process(cx, inst: Instrument, *, full: bool, dry_run: bool) -> dict:
         # Ne jamais traiter un retour vide comme un succès : c'est le symptôme
         # d'un symbole mort ou renommé, et l'ignorer laisserait un trou muet.
         report["status"] = "VIDE — symbole à revérifier"
+        report["ok"] = False
         log.warning("%s (%s) : aucune donnée retournée", inst.ticker, inst.yahoo)
         return report
 
@@ -277,15 +336,20 @@ def process(cx, inst: Instrument, *, full: bool, dry_run: bool) -> dict:
     # ce qui avait été constaté à la résolution du symbole. S'il s'est nettement
     # raccourci, c'est le signe d'un changement de ligne de cotation chez Yahoo —
     # à traiter, sinon le simulateur proposera une date de départ qu'il ne sait
-    # pas honorer. La tolérance absorbe le décalage normal de quelques jours
-    # entre la première barre quotidienne et le repère mensuel du catalogue.
-    if full:
-        gap = (date.fromisoformat(report["start"])
-                 - date.fromisoformat(inst.yahoo_since)).days
+    # pas honorer. On compare à ce que la base contenait déjà : c'est un repère
+    # bien plus fiable qu'une date figée dans le catalogue, puisqu'il détecte une
+    # régression réelle entre deux passages plutôt qu'un écart de convention.
+    if full and previous_start is not None:
+        gap = (date.fromisoformat(report["start"]) - previous_start).days
         if gap > HISTORY_TOLERANCE_DAYS:
-            report["status"] = f"historique raccourci de {gap}j (attendu {inst.yahoo_since})"
-            log.warning("%s : historique démarre le %s, attendu vers le %s",
-                        inst.ticker, report["start"], inst.yahoo_since)
+            report["status"] = (f"historique raccourci de {gap}j "
+                                f"(on avait depuis {previous_start})")
+            report["ok"] = False
+            log.warning("%s : historique démarre le %s, la base remontait au %s",
+                        inst.ticker, report["start"], previous_start)
+
+    if is_new:
+        report["status"] = f"NOUVEAU depuis {report['start']}"
 
     cx.commit()
     return report
@@ -293,7 +357,7 @@ def process(cx, inst: Instrument, *, full: bool, dry_run: bool) -> dict:
 
 def process_fx(cx, pair: str, symbol: str, *, full: bool, dry_run: bool) -> dict:
     report = {"ticker": pair, "yahoo": symbol, "rows": 0,
-             "start": None, "end": None, "status": "ok"}
+             "start": None, "end": None, "status": "ok", "ok": True}
     if dry_run:
         report["status"] = "simulé"
         return report
@@ -307,6 +371,7 @@ def process_fx(cx, pair: str, symbol: str, *, full: bool, dry_run: bool) -> dict
     df = normalize(download(symbol, since))
     if df.empty:
         report["status"] = "VIDE"
+        report["ok"] = False
         return report
 
     report["rows"] = upsert_fx(cx, pair, df)
@@ -321,13 +386,13 @@ def print_report(reports: list[dict]) -> None:
     print("\n" + "─" * 78)
     print(f"{'TICKER':<{width}}  {'SYMBOLE':<10} {'LIGNES':>7}  {'DÉBUT':<11}{'FIN':<11} STATUT")
     print("─" * 78)
-    for b in sorted(reports, key=lambda x: (x["status"] == "ok", x["ticker"])):
+    for b in sorted(reports, key=lambda x: (x["ok"], x["ticker"])):
         print(f"{b['ticker']:<{width}}  {b['yahoo']:<10} {b['rows']:>7}  "
               f"{b['start'] or '—':<11}{b['end'] or '—':<11} {b['status']}")
     print("─" * 78)
 
     total = sum(b["rows"] for b in reports)
-    failed = [b for b in reports if b["status"] != "ok"]
+    failed = [b for b in reports if not b["ok"]]
     print(f"{total} lignes écrites · {len(reports) - len(failed)}/{len(reports)} instruments OK")
     if failed:
         print(f"⚠  À vérifier : {', '.join(b['ticker'] for b in failed)}")
@@ -351,7 +416,15 @@ def main(argv: list[str] | None = None) -> int:
         datefmt="%H:%M:%S",
     )
 
-    instruments = all_instruments()
+    try:
+        catalogue = all_instruments()
+    except CatalogueError as exc:
+        # Un catalogue mal formé doit arrêter net : ingérer une liste tronquée
+        # ferait disparaître des instruments du site sans le moindre signal.
+        log.error("%s", exc)
+        return 2
+
+    instruments = catalogue
     if args.tickers:
         requested = {t.upper() for t in args.tickers}
         instruments = [i for i in instruments if i.ticker.upper() in requested]
@@ -364,11 +437,21 @@ def main(argv: list[str] | None = None) -> int:
         log.error("Aucun instrument à traiter.")
         return 2
 
+    # Les colonnes laissées vides dans le CSV sont complétées ici, avant
+    # d'écrire la dimension : `exchange` participe à l'identité de la ligne et
+    # ne peut pas rester nul au moment du sync.
+    to_resolve = [i for i in catalogue if i.needs_resolution]
+    if to_resolve and not args.dry_run:
+        log.info("Résolution des métadonnées manquantes : %d instrument(s)", len(to_resolve))
+        catalogue = [resolve_metadata(i) for i in catalogue]
+        by_symbol = {i.yahoo: i for i in catalogue}
+        instruments = [by_symbol[i.yahoo] for i in instruments]
+
     cx = open_db(args.db)
     try:
         if args.init:
             init_schema(cx)
-        sync_catalogue(cx, all_instruments())
+        sync_catalogue(cx, catalogue)
 
         mode = "complet" if args.full else "incrémental"
         log.info("Ingestion %s — %d instruments -> %s", mode, len(instruments), args.db)
@@ -381,7 +464,7 @@ def main(argv: list[str] | None = None) -> int:
             except Exception as exc:                  # noqa: BLE001
                 log.error("%s : %s", inst.ticker, exc)
                 reports.append({"ticker": inst.ticker, "yahoo": inst.yahoo, "rows": 0,
-                               "start": None, "end": None, "status": f"ERREUR {exc}"})
+                               "start": None, "end": None, "status": f"ERREUR {exc}", "ok": False})
             time.sleep(PAUSE_BETWEEN_TICKERS)
 
         if args.fx:
@@ -393,11 +476,11 @@ def main(argv: list[str] | None = None) -> int:
                 except Exception as exc:              # noqa: BLE001
                     log.error("%s : %s", pair, exc)
                     reports.append({"ticker": pair, "yahoo": symbol, "rows": 0,
-                                   "start": None, "end": None, "status": f"ERREUR {exc}"})
+                                   "start": None, "end": None, "status": f"ERREUR {exc}", "ok": False})
                 time.sleep(PAUSE_BETWEEN_TICKERS)
 
         print_report(reports)
-        return 1 if any(b["status"] != "ok" for b in reports) else 0
+        return 1 if any(not b["ok"] for b in reports) else 0
     finally:
         cx.close()
 

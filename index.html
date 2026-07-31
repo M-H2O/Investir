@@ -2562,12 +2562,22 @@ const elOutput = document.getElementById('sim-sortie');
 const nameOf = t => (ETFS.find(e => e.ticker === t) || {}).nom
                 || (PRICES.instruments[t] || {}).nom || t;
 
+// Casse conservée à l'affichage : Yahoo distingue 'GBP' (livres) de 'GBp'
+// (pence, soit un centième). Normaliser la casse ferait afficher une unité
+// pour une autre — sur un cours, l'écart est d'un facteur 100.
+const currencyOf = t => (PRICES.instruments[t] || {}).devise || 'EUR';
+const isEuro = t => currencyOf(t).toUpperCase() === 'EUR';
+
+// La devise n'apparaît que lorsqu'elle sort de l'euro : la mentionner partout
+// serait du bruit, l'omettre là où elle change tout serait un piège.
+const optionLabel = t => isEuro(t) ? nameOf(t) : `${nameOf(t)} (${currencyOf(t)})`;
+
 function renderRows(){
   const available = Object.keys(PRICES.instruments).sort((a,b) => nameOf(a).localeCompare(nameOf(b),'fr'));
   elRows.innerHTML = simState.rows.map((l, n) => `
     <div class="alloc-ligne">
       <select data-n="${n}" aria-label="ETF de la ligne ${n+1}">
-        ${available.map(t => `<option value="${t}"${t===l.ticker?' selected':''}>${nameOf(t)}</option>`).join('')}
+        ${available.map(t => `<option value="${t}"${t===l.ticker?' selected':''}>${optionLabel(t)}</option>`).join('')}
       </select>
       <input class="poids" type="number" data-n="${n}" value="${l.weight}" min="0" max="100" step="1"
              aria-label="Poids de la ligne ${n+1} en pourcent">
@@ -2656,6 +2666,25 @@ function runSimulation(){
   renderResult(r);
 }
 
+/* Le calcul additionne des montants sans convertir : si les lignes retenues ne
+   cotent pas toutes dans la même devise, le total n'a aucun sens. On le dit à
+   l'écran plutôt que d'afficher un chiffre faux avec assurance. */
+function currencyWarning(r){
+  const devises = {};
+  for(const h of r.holdings){
+    const d = currencyOf(h.ticker);
+    (devises[d] = devises[d] || []).push(h.ticker);
+  }
+  const codes = Object.keys(devises);
+  if(codes.length < 2) return '';
+  const detail = codes.map(c => `${devises[c].join(', ')} en ${c}`).join(' · ');
+  return `<div class="notice amber" style="margin:0 0 18px">
+    <strong>Devises mélangées — ce total ne veut rien dire.</strong> ${detail}.
+    Le simulateur additionne les valeurs sans appliquer de taux de change.
+    Retirez les lignes qui ne cotent pas dans la même devise, ou remplacez-les
+    par la cotation en euros du même fonds.</div>`;
+}
+
 function renderResult(r){
   const pos = r.gain >= 0;
   const years = (new Date(r.endDate) - new Date(r.startDate)) / 86400000 / 365.25;
@@ -2663,6 +2692,7 @@ function renderResult(r){
   const cagr = years >= 1 ? (Math.pow(r.finalValue / r.capital, 1/years) - 1) * 100 : null;
 
   elOutput.innerHTML = `
+    ${currencyWarning(r)}
     <div class="sim-hero">
       <div class="hero-bloc">
         <div class="hero-label">Valeur au ${formatDate(r.endDate)}</div>

@@ -10,6 +10,7 @@ déjà présentes (Yahoo révise son historique après coup — splits, dividend
     python ingest.py --tickers CSPX IWDA    # limite à quelques instruments
     python ingest.py --dry-run              # montre ce qui serait fait, n'écrit rien
     python ingest.py --fx                   # ajoute les paires de change
+    python ingest.py --no-manual            # ignore les cours saisis à la main
 """
 
 from __future__ import annotations
@@ -26,6 +27,7 @@ from pathlib import Path
 import pandas as pd
 import yfinance as yf
 
+import manual_history
 from catalogue import FX_PAIRS, CatalogueError, Instrument, all_instruments
 
 ROOT = Path(__file__).parent
@@ -44,6 +46,16 @@ HISTORY_TOLERANCE_DAYS = 31
 
 MAX_ATTEMPTS = 3
 PAUSE_BETWEEN_TICKERS = 0.4   # secondes — on reste poli avec une API non contractuelle
+
+# La sortie contient des caractères non-ASCII (encadrés, flèches, accents). Sous
+# Windows, une console ou un pipe en cp1252 ferait planter le script au moment
+# d'AFFICHER le bilan, après le travail utile — on force donc l'UTF-8.
+for _flux in (sys.stdout, sys.stderr):
+    try:
+        _flux.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, ValueError):              # flux déjà redirigé
+        pass
+
 
 log = logging.getLogger("ingest")
 
@@ -381,6 +393,67 @@ def process_fx(cx, pair: str, symbol: str, *, full: bool, dry_run: bool) -> dict
     return report
 
 
+def import_manual(cx, instruments: list[Instrument]) -> list[dict]:
+    """Intègre les cours saisis à la main dans data/history_manual/.
+
+    Les avertissements de cohérence sont affichés tels quels : un raccord douteux
+    doit se voir, pas se deviner en comparant deux courbes après coup.
+    """
+    files = manual_history.available_files()
+    by_ticker = {i.ticker.upper(): i for i in instruments}
+    reports: list[dict] = []
+
+    # Le fichier fait foi : des cours manuels dont le fichier a disparu doivent
+    # disparaître aussi, sinon ils resteraient en base sans moyen de les retirer
+    # autrement qu'en éditant la base à la main.
+    orphans = cx.execute(
+        f"""SELECT i.ticker, COUNT(*) n FROM prices_daily p
+            JOIN instruments i USING(instrument_id)
+            WHERE p.source LIKE '{manual_history.SOURCE_PREFIX}%'
+            GROUP BY i.ticker"""
+    ).fetchall()
+    for row in orphans:
+        if row["ticker"].upper() not in files:
+            cx.execute(
+                f"""DELETE FROM prices_daily WHERE source LIKE '{manual_history.SOURCE_PREFIX}%'
+                    AND instrument_id = (SELECT instrument_id FROM instruments WHERE ticker = ?)""",
+                (row["ticker"],),
+            )
+            cx.commit()
+            log.warning("%s : %d cours manuels retirés (plus aucun fichier dans %s)",
+                        row["ticker"], row["n"], manual_history.MANUAL_DIR.name)
+
+    if not files:
+        return []
+
+    for ticker, path in files.items():
+        inst = by_ticker.get(ticker)
+        if inst is None:
+            log.warning("%s : fichier manuel ignoré, ticker absent du catalogue actif",
+                        path.name)
+            continue
+
+        report = {"ticker": ticker, "yahoo": "manuel", "rows": 0,
+                  "start": None, "end": None, "status": "ok", "ok": True}
+        try:
+            rows = manual_history.load_file(path)
+            instrument_id = get_instrument_id(cx, inst)
+            for warning in manual_history.verify(cx, instrument_id, ticker, rows):
+                log.warning("%s", warning)
+            report["rows"] = manual_history.insert(cx, instrument_id, rows, path.stem)
+            report["start"] = rows[0][0].isoformat()
+            report["end"] = rows[-1][0].isoformat()
+            report["status"] = f"manuel ({path.name})"
+            cx.commit()
+        except manual_history.ManualHistoryError as exc:
+            log.error("%s", exc)
+            report["status"] = f"MANUEL REFUSÉ {exc}"
+            report["ok"] = False
+        reports.append(report)
+
+    return reports
+
+
 def print_report(reports: list[dict]) -> None:
     width = max((len(b["ticker"]) for b in reports), default=8)
     print("\n" + "─" * 78)
@@ -407,6 +480,8 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--tickers", nargs="+", metavar="T", help="limite à ces tickers d'affichage")
     p.add_argument("--fx", action="store_true", help="ingère aussi les paires de change")
     p.add_argument("--dry-run", action="store_true", help="n'écrit rien")
+    p.add_argument("--no-manual", action="store_true",
+                   help="ignore data/history_manual/ (ne charge que Yahoo)")
     p.add_argument("-v", "--verbose", action="store_true")
     args = p.parse_args(argv)
 
@@ -478,6 +553,11 @@ def main(argv: list[str] | None = None) -> int:
                     reports.append({"ticker": pair, "yahoo": symbol, "rows": 0,
                                    "start": None, "end": None, "status": f"ERREUR {exc}", "ok": False})
                 time.sleep(PAUSE_BETWEEN_TICKERS)
+
+        # Après Yahoo, jamais avant : le manuel ne comble que les dates que la
+        # source de référence ne couvre pas.
+        if not args.no_manual and not args.dry_run:
+            reports.extend(import_manual(cx, instruments))
 
         print_report(reports)
         return 1 if any(not b["ok"] for b in reports) else 0

@@ -38,6 +38,16 @@ from pathlib import Path
 
 from catalogue import all_instruments
 
+# La sortie contient des caractères non-ASCII (encadrés, flèches, accents). Sous
+# Windows, une console ou un pipe en cp1252 ferait planter le script au moment
+# d'AFFICHER le bilan, après le travail utile — on force donc l'UTF-8.
+for _flux in (sys.stdout, sys.stderr):
+    try:
+        _flux.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, ValueError):              # flux déjà redirigé
+        pass
+
+
 ROOT = Path(__file__).parent
 DEFAULT_DB = ROOT / "boussole.db"
 DEFAULT_OUTPUT = ROOT.parent / "data" / "cours.json"
@@ -63,7 +73,7 @@ def export(db: Path, sortie: Path) -> dict:
 
     rows = cx.execute(
         """SELECT i.ticker, i.name, i.isin, i.currency, i.yahoo_symbol,
-                  p.price_date, p.adjusted_close
+                  p.price_date, p.adjusted_close, p.source
            FROM prices_daily p JOIN instruments i USING(instrument_id)
            WHERE p.adjusted_close IS NOT NULL
            ORDER BY p.price_date"""
@@ -99,21 +109,31 @@ def export(db: Path, sortie: Path) -> dict:
     for r in rows:
         e = raw.setdefault(
             r["ticker"],
-            {"nom": r["name"], "isin": r["isin"], "devise": r["currency"], "points": {}},
+            {"nom": r["name"], "isin": r["isin"], "devise": r["currency"],
+             "points": {}, "manual": []},
         )
         e["points"][index_of[r["price_date"]]] = round(r["adjusted_close"], DECIMALS)
+        if (r["source"] or "").startswith("manuel"):
+            e["manual"].append(r["price_date"])
 
     instruments = {}
     for ticker, e in sorted(raw.items()):
         positions = sorted(e["points"])
         i0, i1 = positions[0], positions[-1]
-        instruments[ticker] = {
+        entry = {
             "nom": e["nom"],
             "isin": e["isin"],
             "devise": e["devise"],
             "i0": i0,
             "prix": [e["points"].get(i) for i in range(i0, i1 + 1)],
         }
+        # Bornes de la partie saisie à la main : le site doit pouvoir le dire à
+        # l'utilisateur plutôt que de présenter toute la courbe comme sourcée
+        # de la même façon.
+        if e["manual"]:
+            entry["manuel"] = {"de": min(e["manual"]), "a": max(e["manual"]),
+                               "jours": len(e["manual"])}
+        instruments[ticker] = entry
 
     payload = {
         "genere_le": date.today().isoformat(),

@@ -2685,6 +2685,24 @@ function currencyWarning(r){
     par la cotation en euros du même fonds.</div>`;
 }
 
+/* Une partie de la courbe peut reposer sur des cours saisis à la main faute de
+   les trouver chez le fournisseur. Le dire est la contrepartie de le permettre :
+   sans ça, tout l'historique se présenterait comme sourcé de la même façon. */
+function manualDataNotice(r){
+  const concernes = r.holdings
+    .map(h => ({t: h.ticker, m: (PRICES.instruments[h.ticker] || {}).manuel}))
+    .filter(x => x.m && x.m.de <= r.endDate && x.m.a >= r.startDate);
+  if(!concernes.length) return '';
+  const detail = concernes
+    .map(x => `${nameOf(x.t)} (${formatDate(x.m.de)} → ${formatDate(x.m.a)}, ${x.m.jours} jours)`)
+    .join(' · ');
+  return `<div class="notice" style="margin:0 0 18px">
+    <strong>Une partie de cet historique a été saisie à la main.</strong> ${detail}.
+    Ces cours proviennent de l'émetteur ou d'un courtier, faute d'être publiés par
+    le fournisseur de données&nbsp;; ils n'ont pas la même traçabilité que le reste
+    de la courbe.</div>`;
+}
+
 function renderResult(r){
   const pos = r.gain >= 0;
   const years = (new Date(r.endDate) - new Date(r.startDate)) / 86400000 / 365.25;
@@ -2693,6 +2711,7 @@ function renderResult(r){
 
   elOutput.innerHTML = `
     ${currencyWarning(r)}
+    ${manualDataNotice(r)}
     <div class="sim-hero">
       <div class="hero-bloc">
         <div class="hero-label">Valeur au ${formatDate(r.endDate)}</div>

@@ -12,10 +12,12 @@ vendu, aucune commission, aucun conseil personnalisé.**
 index.html          Le site entier (HTML + CSS + JS, sans dépendance externe)
 data/
   tickers.csv       LA LISTE — éditable à la main, c'est le seul fichier à toucher
+  history_manual/   Cours saisis à la main, un fichier par ticker (facultatif)
   cours.json        Cours quotidiens exportés (GÉNÉRÉ, ne pas éditer)
 pipeline/
   schema.sql        Schéma SQLite + vue prices_weekly
   catalogue.py      Lecteur de data/tickers.csv (validation, valeurs par défaut)
+  manual_history.py Lecteur de data/history_manual/ + contrôles de raccord
   ingest.py         Récupération des cours -> boussole.db
   export_json.py    boussole.db -> data/cours.json
   portefeuille.py   Moteur de calcul de portefeuille (référence)
@@ -65,8 +67,8 @@ python export_json.py
 |---|---|
 | `python ingest.py --full` | Rejoue tout l'historique au lieu de l'incrémental |
 | `python ingest.py --tickers CSPX IWDA` | Limite à quelques instruments |
-| `python ingest.py --dry-run` | Montre notamment les lignes détectées comme NOUVEAU |
-| `python ingest.py --dry-run` | Montre ce qui serait fait, n'écrit rien |
+| `python ingest.py --dry-run` | Montre ce qui serait fait sans rien écrire (dont les lignes NOUVEAU) |
+| `python ingest.py --no-manual` | Ignore `data/history_manual/`, ne charge que Yahoo |
 | `python ingest.py --fx` | Ajoute les paires de change (inutile tant que tout cote en euros) |
 
 `ingest.py` renvoie le code de sortie `0` si tout est OK, `1` si au moins un
@@ -145,6 +147,72 @@ devises — mais aucune conversion n'est faite.
 
 Pour qu'un instrument apparaisse aussi dans le comparateur d'ETF (onglet
 distinct), ajouter la ligne correspondante au tableau `ETFS` dans `index.html`.
+
+---
+
+## Compléter un historique à la main
+
+Plusieurs fonds existent depuis dix ans alors que Yahoo n'en publie que deux
+(fusions Lyxor/Amundi, changement de ligne de cotation). Les cours manquants se
+trouvent chez l'émetteur ou un courtier et peuvent être saisis dans
+`data/history_manual/<TICKER>.csv` :
+
+```csv
+date,close
+2015-01-02,142.35
+2015-01-05,143.10
+```
+
+Dates en ISO **ou** au format français (`02/01/2015`), virgule décimale et
+séparateur `;` acceptés — un export Excel français fonctionne tel quel.
+Colonne `adjusted_close` facultative.
+
+Puis `python ingest.py` : les cours sont intégrés, et `export_json.py` les
+propage au site.
+
+### La règle de préséance
+
+Le manuel **ne remplace jamais** une cotation Yahoo, il ne comble que les dates
+absentes. Trois conséquences :
+
+- corriger votre fichier et relancer met bien à jour **vos** lignes ;
+- si Yahoo étend un jour son historique vers le passé, ses valeurs reprennent
+  la main automatiquement ;
+- **supprimer le fichier supprime les cours** à la prochaine ingestion — le
+  fichier fait foi.
+
+### Les deux pièges, et comment le pipeline les signale
+
+**1. Cours brut contre cours ajusté.** Le simulateur calcule sur le cours
+*ajusté* (dividendes réinvestis). Les courtiers publient en général le cours
+*brut*. Pour un ETF **capitalisant** les deux coïncident et le raccord est sûr.
+Pour un ETF **distribuant**, greffer du brut sous-estime le rendement de tout
+l'écart de dividendes — sur VWRL et TDIV, cet écart atteint 21 % et 35 %.
+`ingest.py` détecte le cas et vous prévient.
+
+Pour savoir où vous en êtes :
+
+```sql
+SELECT i.ticker, SUM(ABS(p.close - p.adjusted_close) > 0.005) ecarts
+FROM prices_daily p JOIN instruments i USING(instrument_id) GROUP BY i.ticker;
+```
+
+`ecarts = 0` → raccord sûr. Sinon, renseignez `adjusted_close` vous-même.
+
+**2. La marche à la jonction.** Une série venue d'une autre place, ou une VL au
+lieu du cours de clôture, crée un décrochement invisible sur la courbe.
+**Faites délibérément chevaucher quelques mois** avec la période déjà couverte
+par Yahoo : le script compare alors les deux sources date par date et affiche
+l'écart maximal. À défaut de chevauchement, il ne peut que mesurer le saut au
+point de jonction, ce qui est bien plus faible.
+
+### Traçabilité
+
+Les lignes saisies sont marquées `source = 'manuel:<fichier>'` en base, et le
+simulateur affiche un encart nommant l'instrument et la période concernés dès
+qu'une simulation les traverse. C'est la contrepartie de la souplesse : une
+courbe partiellement saisie à la main ne doit pas se présenter comme si elle
+était intégralement sourcée.
 
 ---
 

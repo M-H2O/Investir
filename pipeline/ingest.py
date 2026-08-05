@@ -436,9 +436,14 @@ def import_manual(cx, instruments: list[Instrument]) -> list[dict]:
         report = {"ticker": ticker, "yahoo": "manuel", "rows": 0,
                   "start": None, "end": None, "status": "ok", "ok": True}
         try:
-            rows = manual_history.load_file(path)
+            quotes = manual_history.load_file(path)
             instrument_id = get_instrument_id(cx, inst)
-            for warning in manual_history.verify(cx, instrument_id, ticker, rows):
+            # Le fichier compense-t-il l'écart brut/ajusté ?
+            compensated = any(q.adjusted is not None or q.dividend > 0 for q in quotes)
+            rows = manual_history.resolve_adjusted(cx, instrument_id, quotes)
+
+            for warning in manual_history.verify(cx, instrument_id, ticker, rows,
+                                                 compensated=compensated):
                 log.warning("%s", warning)
             report["rows"] = manual_history.insert(cx, instrument_id, rows, path.stem)
             report["start"] = rows[0][0].isoformat()

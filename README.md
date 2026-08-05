@@ -154,8 +154,25 @@ distinct), ajouter la ligne correspondante au tableau `ETFS` dans `index.html`.
 
 Plusieurs fonds existent depuis dix ans alors que Yahoo n'en publie que deux
 (fusions Lyxor/Amundi, changement de ligne de cotation). Les cours manquants se
-trouvent chez l'émetteur ou un courtier et peuvent être saisis dans
-`data/history_manual/<TICKER>.csv` :
+trouvent chez l'émetteur ou un courtier et peuvent être saisis à la main.
+
+### Nommer le fichier
+
+`data/history_manual/<TICKER>.csv`, où `<TICKER>` est le **ticker d'affichage** —
+la colonne `ticker` de `tickers.csv` — et *non* le symbole Yahoo.
+
+| Instrument | Symbole Yahoo | Fichier à créer |
+|---|---|---|
+| Amundi Stoxx Europe 600 | `MEUD.PA` | `MEUD.csv` |
+| iShares Core S&P 500 | `SXR8.DE` | **`CSPX.csv`** |
+| iShares Global Aggregate | `0GGH.L` | **`AGGH.csv`** |
+
+La casse est indifférente (`meud.csv` fonctionne), l'extension doit être `.csv`,
+et les fichiers commençant par `_` ou `.` sont ignorés — d'où `_modele.csv`,
+livré vide comme point de départ. Un fichier dont le nom ne correspond à aucun
+ticker actif est ignoré avec un avertissement, jamais silencieusement.
+
+### Le contenu
 
 ```csv
 date,close
@@ -170,6 +187,54 @@ Colonne `adjusted_close` facultative.
 Puis `python ingest.py` : les cours sont intégrés, et `export_json.py` les
 propage au site.
 
+### ETF distribuant : renseignez les dividendes
+
+C'est le point à ne pas rater. Le simulateur calcule sur le cours **ajusté**,
+alors qu'un courtier publie du **brut**. Pour un ETF **capitalisant** les deux
+coïncident : `date,close` suffit. Pour un ETF **distribuant**, le cours brut
+décroche à chaque détachement alors que le porteur, lui, a touché l'argent —
+greffer du brut tel quel sous-estime le rendement de tout le cumul des
+dividendes.
+
+Ajoutez alors une colonne `dividend` (montant détaché ce jour-là, vide ou `0`
+ailleurs) :
+
+```csv
+date,close,dividend
+2012-01-02,80.00,0
+2012-04-02,82.00,0.55
+2012-07-02,84.00,0.60
+```
+
+Le pipeline reconstitue l'ajustement lui-même, en composant deux facteurs :
+
+1. vos détachements, rétro-appliqués aux dates **antérieures** à chacun ;
+2. le facteur cumulé de Yahoo à sa plus ancienne cotation — qui couvre déjà
+   tous les versements survenus **depuis**.
+
+Ce chaînage rend le résultat exact plutôt qu'approché, et sans nécessiter de
+recalage arbitraire. Le script confirme à l'écran :
+
+```
+✓ ETF distribuant, ajustement reconstitué à partir de vos dividendes
+  puis raccordé au facteur Yahoo (0.7901 depuis le 2012-05-22).
+```
+
+Si vous disposez déjà d'une série **ajustée** (certains sites publient une
+performance « dividendes réinvestis »), utilisez plutôt `adjusted_close` : cette
+colonne est prioritaire et rien n'est recalculé.
+
+Pour savoir si un instrument distribue :
+
+```sql
+SELECT i.ticker, SUM(ABS(p.close - p.adjusted_close) > 0.005) ecarts
+FROM prices_daily p JOIN instruments i USING(instrument_id) GROUP BY i.ticker;
+```
+
+`ecarts = 0` → capitalisant, `date,close` suffit. Sinon, colonne `dividend`
+obligatoire sous peine de fausser le calcul. Sur ce catalogue, seuls **VWRL,
+TDIV et EWLD** sont concernés.
+
 ### La règle de préséance
 
 Le manuel **ne remplace jamais** une cotation Yahoo, il ne comble que les dates
@@ -181,25 +246,9 @@ absentes. Trois conséquences :
 - **supprimer le fichier supprime les cours** à la prochaine ingestion — le
   fichier fait foi.
 
-### Les deux pièges, et comment le pipeline les signale
+### Vérifier le raccord
 
-**1. Cours brut contre cours ajusté.** Le simulateur calcule sur le cours
-*ajusté* (dividendes réinvestis). Les courtiers publient en général le cours
-*brut*. Pour un ETF **capitalisant** les deux coïncident et le raccord est sûr.
-Pour un ETF **distribuant**, greffer du brut sous-estime le rendement de tout
-l'écart de dividendes — sur VWRL et TDIV, cet écart atteint 21 % et 35 %.
-`ingest.py` détecte le cas et vous prévient.
-
-Pour savoir où vous en êtes :
-
-```sql
-SELECT i.ticker, SUM(ABS(p.close - p.adjusted_close) > 0.005) ecarts
-FROM prices_daily p JOIN instruments i USING(instrument_id) GROUP BY i.ticker;
-```
-
-`ecarts = 0` → raccord sûr. Sinon, renseignez `adjusted_close` vous-même.
-
-**2. La marche à la jonction.** Une série venue d'une autre place, ou une VL au
+**La marche à la jonction.** Une série venue d'une autre place, ou une VL au
 lieu du cours de clôture, crée un décrochement invisible sur la courbe.
 **Faites délibérément chevaucher quelques mois** avec la période déjà couverte
 par Yahoo : le script compare alors les deux sources date par date et affiche

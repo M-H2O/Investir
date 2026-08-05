@@ -15,7 +15,8 @@ from pathlib import Path
 import pytest
 
 import manual_history
-from manual_history import ManualHistoryError, insert, load_file, verify
+from manual_history import (ManualHistoryError, ManualQuote, insert, load_file,
+                            resolve_adjusted, verify)
 
 SCHEMA = Path(__file__).parent.parent / "schema.sql"
 
@@ -31,37 +32,46 @@ def write(tmp_path, name: str, content: str, encoding: str = "utf-8") -> Path:
 # ---------------------------------------------------------------------
 def test_minimal_iso_file(tmp_path):
     p = write(tmp_path, "MEUD.csv", "date,close\n2015-01-02,142.35\n2015-01-05,143.10\n")
-    assert load_file(p) == [
-        (date(2015, 1, 2), 142.35, 142.35),
-        (date(2015, 1, 5), 143.10, 143.10),
+    quotes = load_file(p)
+    assert [(q.day, q.close) for q in quotes] == [
+        (date(2015, 1, 2), 142.35),
+        (date(2015, 1, 5), 143.10),
     ]
+    # sans colonne dédiée, l'ajusté reste à calculer et aucun dividende n'est connu
+    assert all(q.adjusted is None and q.dividend == 0 for q in quotes)
 
 
 def test_french_date_and_decimal_comma(tmp_path):
     """Format typique d'un copier-coller depuis un site français."""
     p = write(tmp_path, "MEUD.csv", "date;close\n02/01/2015;142,35\n")
-    assert load_file(p) == [(date(2015, 1, 2), 142.35, 142.35)]
+    assert [(q.day, q.close) for q in load_file(p)] == [(date(2015, 1, 2), 142.35)]
 
 
 def test_thousands_separators_are_tolerated(tmp_path):
     p = write(tmp_path, "X.csv", "date,close\n2015-01-02,\"1 234,56\"\n")
-    assert load_file(p)[0][1] == pytest.approx(1234.56)
+    assert load_file(p)[0].close == pytest.approx(1234.56)
 
 
 def test_adjusted_close_column_is_used_when_present(tmp_path):
     p = write(tmp_path, "X.csv",
               "date,close,adjusted_close\n2015-01-02,142.35,138.90\n")
-    assert load_file(p) == [(date(2015, 1, 2), 142.35, 138.90)]
+    assert load_file(p)[0].adjusted == pytest.approx(138.90)
 
 
-def test_adjusted_close_defaults_to_close(tmp_path):
+def test_empty_adjusted_close_is_left_to_compute(tmp_path):
     p = write(tmp_path, "X.csv", "date,close,adjusted_close\n2015-01-02,142.35,\n")
-    assert load_file(p) == [(date(2015, 1, 2), 142.35, 142.35)]
+    assert load_file(p)[0].adjusted is None
+
+
+def test_dividend_column_is_read(tmp_path):
+    p = write(tmp_path, "X.csv",
+              "date,close,dividend\n2015-01-02,100,0\n2015-06-01,102,1.50\n")
+    assert [q.dividend for q in load_file(p)] == [0.0, 1.50]
 
 
 def test_rows_are_sorted_by_date(tmp_path):
     p = write(tmp_path, "X.csv", "date,close\n2015-03-01,10\n2015-01-02,9\n")
-    assert [r[0] for r in load_file(p)] == [date(2015, 1, 2), date(2015, 3, 1)]
+    assert [q.day for q in load_file(p)] == [date(2015, 1, 2), date(2015, 3, 1)]
 
 
 def test_bom_and_blank_lines(tmp_path):
@@ -191,7 +201,63 @@ def test_warns_when_instrument_distributes_dividends(cx):
     """Greffer du cours BRUT sur une série ajustée sous-estime le rendement."""
     add_yahoo(cx, "2024-03-01", 240.0, adjusted=200.0)   # brut != ajusté
     warnings = verify(cx, 1, "MEUD", [(date(2015, 1, 2), 140.0, 140.0)])
-    assert any("distribue" in w for w in warnings)
+    assert any("DISTRIBUE" in w for w in warnings)
+
+
+def test_no_warning_when_the_file_compensates(cx):
+    """Fichier fournissant des dividendes : l'ajustement est reconstitué."""
+    add_yahoo(cx, "2024-03-01", 240.0, adjusted=200.0)
+    warnings = verify(cx, 1, "MEUD", [(date(2015, 1, 2), 140.0, 140.0)],
+                      compensated=True)
+    assert any("✓" in w and "reconstitué" in w for w in warnings)
+    assert not any("DISTRIBUE" in w for w in warnings)
+
+
+# ---------------------------------------------------------------------
+#  Reconstitution du cours ajusté pour un ETF distribuant
+# ---------------------------------------------------------------------
+def test_yahoo_scale_factor_is_read_from_its_oldest_quote(cx):
+    from manual_history import yahoo_scale_factor
+    add_yahoo(cx, "2024-03-01", 200.0, adjusted=180.0)   # facteur 0,90
+    add_yahoo(cx, "2024-03-04", 210.0, adjusted=195.0)
+    scale, since = yahoo_scale_factor(cx, 1)
+    assert scale == pytest.approx(0.90)
+    assert since == "2024-03-01"
+
+
+def test_raw_prices_are_scaled_onto_the_yahoo_series(cx):
+    """Sans dividende saisi, le brut est quand même remis à l'échelle de Yahoo :
+    les versements POSTÉRIEURS à la période saisie sont déjà dans son facteur."""
+    add_yahoo(cx, "2024-03-01", 200.0, adjusted=180.0)   # facteur 0,90
+    quotes = [ManualQuote(date(2015, 1, 2), 100.0, None, 0.0)]
+    assert resolve_adjusted(cx, 1, quotes)[0][2] == pytest.approx(90.0)
+
+
+def test_dividends_inside_the_manual_period_are_back_applied(cx):
+    """Un détachement ne fait décrocher QUE les cours antérieurs."""
+    add_yahoo(cx, "2024-03-01", 200.0, adjusted=200.0)   # facteur 1
+    quotes = [
+        ManualQuote(date(2015, 1, 2), 100.0, None, 0.0),
+        ManualQuote(date(2015, 6, 1), 102.0, None, 2.0),   # détachement de 2
+        ManualQuote(date(2015, 9, 1), 105.0, None, 0.0),
+    ]
+    resolved = resolve_adjusted(cx, 1, quotes)
+    # après le détachement : inchangé
+    assert resolved[2][2] == pytest.approx(105.0)
+    assert resolved[1][2] == pytest.approx(102.0)
+    # avant : réduit de (1 - 2/100), le 100 étant la clôture de la veille
+    assert resolved[0][2] == pytest.approx(100.0 * (1 - 2 / 100.0))
+
+
+def test_explicit_adjusted_close_always_wins(cx):
+    add_yahoo(cx, "2024-03-01", 200.0, adjusted=180.0)
+    quotes = [ManualQuote(date(2015, 1, 2), 100.0, 77.0, 0.0)]
+    assert resolve_adjusted(cx, 1, quotes)[0][2] == pytest.approx(77.0)
+
+
+def test_without_yahoo_data_the_scale_stays_neutral(cx):
+    quotes = [ManualQuote(date(2015, 1, 2), 100.0, None, 0.0)]
+    assert resolve_adjusted(cx, 1, quotes)[0][2] == pytest.approx(100.0)
 
 
 def test_no_dividend_warning_for_accumulating(cx):

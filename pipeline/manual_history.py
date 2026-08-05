@@ -29,7 +29,13 @@ Format accepté
 
 `date` en ISO (2015-01-02) ou au format français (02/01/2015).
 `close` avec un point ou une virgule décimale, espaces tolérés.
-Colonne `adjusted_close` facultative : à défaut, `close` est repris tel quel.
+Deux colonnes facultatives :
+  `adjusted_close`  si vous disposez déjà d'une série ajustée — prioritaire ;
+  `dividend`        montant détaché ce jour-là, pour un ETF DISTRIBUANT. Le
+                    pipeline calcule alors l'ajustement lui-même et le raccorde
+                    à l'échelle de Yahoo (voir `resolve_adjusted`).
+À défaut des deux, `close` est repris tel quel — correct pour un ETF
+capitalisant, faux pour un distribuant.
 Séparateur `,` ou `;`, BOM Excel toléré — comme pour le catalogue.
 """
 
@@ -39,6 +45,7 @@ import csv
 import io
 from datetime import date, datetime
 from pathlib import Path
+from typing import NamedTuple
 
 MANUAL_DIR = Path(__file__).parent.parent / "data" / "history_manual"
 
@@ -96,8 +103,20 @@ def _parse_number(raw: str, path: Path, line_no: int, column: str) -> float:
     return value
 
 
-def load_file(path: Path) -> list[tuple[date, float, float]]:
-    """Lit un fichier de cours manuels. Renvoie [(date, close, adjusted_close)]."""
+class ManualQuote(NamedTuple):
+    day: date
+    close: float
+    adjusted: float | None   # None = à calculer (voir resolve_adjusted)
+    dividend: float          # 0.0 si aucun détachement ce jour-là
+
+
+def load_file(path: Path) -> list[ManualQuote]:
+    """Lit un fichier de cours manuels.
+
+    `adjusted` vaut None quand la colonne `adjusted_close` est absente ou vide :
+    c'est `resolve_adjusted` qui le calculera, à partir des dividendes si la
+    colonne `dividend` est renseignée.
+    """
     text = path.read_text(encoding="utf-8-sig")
     if not text.strip():
         raise ManualHistoryError(f"{path.name} est vide.")
@@ -116,7 +135,7 @@ def load_file(path: Path) -> list[tuple[date, float, float]]:
                 f"(trouvé : {', '.join(reader.fieldnames)})."
             )
 
-    rows: list[tuple[date, float, float]] = []
+    rows: list[ManualQuote] = []
     seen: dict[date, int] = {}
     for line_no, row in enumerate(reader, start=2):
         raw_date = (row.get(columns["date"]) or "").strip()
@@ -141,16 +160,83 @@ def load_file(path: Path) -> list[tuple[date, float, float]]:
             )
 
         close = _parse_number(row[columns["close"]], path, line_no, "close")
-        adjusted = close
+
+        adjusted = None
         if "adjusted_close" in columns:
             raw_adj = (row.get(columns["adjusted_close"]) or "").strip()
             if raw_adj:
                 adjusted = _parse_number(raw_adj, path, line_no, "adjusted_close")
-        rows.append((day, close, adjusted))
+
+        dividend = 0.0
+        if "dividend" in columns:
+            raw_div = (row.get(columns["dividend"]) or "").strip()
+            # 0 est une valeur légitime ici (pas de détachement), contrairement
+            # à un cours : on ne passe donc pas par _parse_number.
+            if raw_div and raw_div not in {"0", "0.0", "0,0", "0,00"}:
+                dividend = _parse_number(raw_div, path, line_no, "dividend")
+
+        rows.append(ManualQuote(day, close, adjusted, dividend))
 
     if not rows:
         raise ManualHistoryError(f"{path.name} ne contient aucune cotation.")
     return sorted(rows)
+
+
+def yahoo_scale_factor(cx, instrument_id: int) -> tuple[float, str | None]:
+    """Facteur d'ajustement cumulé de Yahoo à sa plus ancienne cotation.
+
+    Yahoo publie `adjusted_close = close × F(t)`, où F(t) rassemble tous les
+    détachements postérieurs à t. À sa date la plus ancienne T0, le rapport
+    adj/close DONNE donc F(T0) : tous les dividendes versés depuis T0. C'est
+    exactement le facteur qui manque à un cours brut plus ancien que T0.
+    """
+    row = cx.execute(
+        """SELECT price_date, close, adjusted_close FROM prices_daily
+           WHERE instrument_id = ? AND source = 'yahoo'
+             AND close IS NOT NULL AND adjusted_close IS NOT NULL AND close > 0
+           ORDER BY price_date LIMIT 1""",
+        (instrument_id,),
+    ).fetchone()
+    if row is None:
+        return 1.0, None
+    return row["adjusted_close"] / row["close"], row["price_date"]
+
+
+def resolve_adjusted(cx, instrument_id: int,
+                     quotes: list[ManualQuote]) -> list[tuple[date, float, float]]:
+    """Transforme des cours BRUTS en cours ajustés sur l'échelle de Yahoo.
+
+    Un ETF distribuant détache des dividendes : son cours brut décroche à chaque
+    versement, alors que le porteur, lui, a touché l'argent. Le cours ajusté
+    rétablit cette continuité en rétro-appliquant les détachements. Sans ça,
+    greffer du brut sur de l'ajusté sous-estime le rendement de tout le
+    cumul des dividendes.
+
+    Deux facteurs se composent, et c'est ce chaînage qui rend le résultat exact
+    plutôt qu'approché :
+      1. les détachements SURVENUS PENDANT la période saisie, fournis par vous
+         dans la colonne `dividend` ;
+      2. tous ceux survenus DEPUIS, que Yahoo connaît déjà — c'est
+         `yahoo_scale_factor`.
+
+    Une valeur explicite en colonne `adjusted_close` a toujours priorité : si
+    vous disposez d'une série déjà ajustée, on n'y touche pas.
+    """
+    scale, _ = yahoo_scale_factor(cx, instrument_id)
+
+    resolved: list[tuple[date, float, float]] = [None] * len(quotes)  # type: ignore[list-item]
+    factor = scale
+    for i in range(len(quotes) - 1, -1, -1):
+        q = quotes[i]
+        adjusted = q.adjusted if q.adjusted is not None else q.close * factor
+        resolved[i] = (q.day, q.close, adjusted)
+        # Le détachement du jour i fait décrocher le cours : il ne s'applique
+        # qu'aux dates ANTÉRIEURES, d'où la mise à jour après affectation.
+        if q.dividend > 0 and i > 0:
+            previous_close = quotes[i - 1].close
+            if previous_close > 0:
+                factor *= max(0.0, 1 - q.dividend / previous_close)
+    return resolved
 
 
 def available_files(directory: Path | None = None) -> dict[str, Path]:
@@ -192,12 +278,18 @@ def insert(cx, instrument_id: int, rows: list[tuple[date, float, float]],
 
 
 def verify(cx, instrument_id: int, ticker: str,
-           rows: list[tuple[date, float, float]]) -> list[str]:
-    """Contrôle la cohérence du raccord. Renvoie la liste des avertissements."""
+           rows: list[tuple[date, float, float]],
+           compensated: bool = False) -> list[str]:
+    """Contrôle la cohérence du raccord. Renvoie la liste des avertissements.
+
+    `compensated` indique que le fichier fournit de quoi rétablir l'ajustement
+    (colonne `dividend` ou `adjusted_close`) : sans ça, on ne saurait pas
+    distinguer un raccord correctement compensé d'un raccord de cours bruts.
+    """
     warnings: list[str] = []
 
     # 1. Cours ajusté : le raccord n'est neutre que si l'instrument ne distribue
-    #    rien sur la période connue de Yahoo.
+    #    rien, OU si vous avez fourni de quoi rétablir l'ajustement.
     distributes = cx.execute(
         """SELECT COUNT(*) n FROM prices_daily
            WHERE instrument_id = ? AND source = 'yahoo'
@@ -205,12 +297,20 @@ def verify(cx, instrument_id: int, ticker: str,
         (instrument_id,),
     ).fetchone()["n"]
     if distributes:
-        warnings.append(
-            f"{ticker} : la partie Yahoo distingue cours brut et cours ajusté sur "
-            f"{distributes} jours (l'ETF distribue des dividendes). Greffer des "
-            f"cours BRUTS sous-estimera le rendement — renseignez la colonne "
-            f"'adjusted_close' ou renoncez au raccord pour cette ligne."
-        )
+        if compensated:
+            scale, since = yahoo_scale_factor(cx, instrument_id)
+            warnings.append(
+                f"{ticker} : ✓ ETF distribuant, ajustement reconstitué à partir de "
+                f"vos dividendes puis raccordé au facteur Yahoo "
+                f"({scale:.4f} depuis le {since})."
+            )
+        else:
+            warnings.append(
+                f"{ticker} : la partie Yahoo distingue cours brut et cours ajusté sur "
+                f"{distributes} jours — cet ETF DISTRIBUE des dividendes. Des cours "
+                f"bruts sous-estimeront le rendement : ajoutez une colonne 'dividend' "
+                f"(montant détaché, 0 ailleurs) ou 'adjusted_close'."
+            )
 
     manual_by_date = {d: a for d, _, a in rows}
 

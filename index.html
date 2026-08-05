@@ -2965,7 +2965,14 @@ document.querySelectorAll('.sim-preset button').forEach(b => {
 elDate.addEventListener('input', () => { simState.iStart = +elDate.value; runSimulation(); });
 
 /* ---------- Chargement des cours ---------- */
-fetch('data/cours.json')
+/* `cache: 'no-cache'` force le navigateur à REVALIDER auprès du serveur au lieu
+   de servir sa copie sans demander. Le fichier n'est re-téléchargé que s'il a
+   changé (réponse 304 sinon), donc aucun coût quand les cours sont stables —
+   mais une mise à jour des cours devient visible sans rechargement forcé.
+   Sans ça, régénérer cours.json ne se voyait pas : le navigateur continuait
+   d'afficher les anciennes dates, ce qui donne l'impression que l'import a
+   échoué alors qu'il a fonctionné. */
+fetch('data/cours.json', {cache: 'no-cache'})
   .then(r => { if(!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
   .then(j => {
     PRICES = j;

@@ -47,6 +47,19 @@ def test_french_date_and_decimal_comma(tmp_path):
     assert [(q.day, q.close) for q in load_file(p)] == [(date(2015, 1, 2), 142.35)]
 
 
+@pytest.mark.parametrize("raw", [
+    "05/08/2016 00:00",        # export courtier français
+    "2016-08-05 00:00:00",     # export ISO avec heure
+    "2016-08-05T00:00:00",     # ISO 8601 complet
+    "2016-08-05",              # sans heure
+])
+def test_time_suffix_is_ignored(tmp_path, raw):
+    """Un export de cours accole presque toujours une heure : elle n'a aucun
+    sens sur une série quotidienne et ne doit pas faire échouer la lecture."""
+    p = write(tmp_path, "X.csv", f"date,close\n{raw},126.68\n")
+    assert load_file(p)[0].day == date(2016, 8, 5)
+
+
 def test_thousands_separators_are_tolerated(tmp_path):
     p = write(tmp_path, "X.csv", "date,close\n2015-01-02,\"1 234,56\"\n")
     assert load_file(p)[0].close == pytest.approx(1234.56)

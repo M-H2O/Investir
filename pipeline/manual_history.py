@@ -69,14 +69,19 @@ class ManualHistoryError(Exception):
 
 def _parse_date(raw: str, path: Path, line_no: int) -> date:
     text = raw.strip()
-    for fmt in ("%Y-%m-%d", "%d/%m/%Y", "%d/%m/%y", "%d-%m-%Y"):
+    # Les exports de cours accolent très souvent une heure — « 05/08/2016 00:00 »
+    # chez un courtier, « 2016-08-05T00:00:00 » en ISO. Elle n'apporte rien sur
+    # une série quotidienne : on ne garde que la partie date.
+    head = text.split()[0] if text.split() else text
+    head = head.split("T")[0]
+    for fmt in ("%Y-%m-%d", "%d/%m/%Y", "%d/%m/%y", "%d-%m-%Y", "%Y/%m/%d"):
         try:
-            return datetime.strptime(text, fmt).date()
+            return datetime.strptime(head, fmt).date()
         except ValueError:
             continue
     raise ManualHistoryError(
         f"{path.name} ligne {line_no} : date '{raw}' illisible "
-        f"(attendu 2015-01-02 ou 02/01/2015)."
+        f"(attendu 2015-01-02 ou 02/01/2015, éventuellement suivi d'une heure)."
     )
 
 

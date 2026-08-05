@@ -9,22 +9,81 @@
 <link href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Public+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{
-  --paper:#FBFBF7;
-  --card:#FFFFFF;
-  --ink:#1C2540;
-  --ink-soft:#525C78;
-  --ink-faint:#8A92A8;
-  --rule:#C9D7E9;
-  --rule-soft:#E1E9F4;
-  --red:#D0453C;
-  --green:#1F7A56;
-  --green-soft:#E7F2EC;
-  --line:#E5E7E0;
-  --amber:#8A6D1F;
-  --amber-soft:#F7F0DC;
+  /* ---- Fond : noir bleuté virant au bleu profond ---- */
+  --nuit:#04060D;
+  --paper:#070B16;
+
+  /* ---- Verre : des voiles translucides, jamais des aplats ----
+     L'effet ne tient qu'à trois choses réunies — une transparence faible, un
+     flou d'arrière-plan, et une bordure claire qui capte la lumière au bord. */
+  --card:rgba(255,255,255,.055);
+  --surface-2:rgba(255,255,255,.032);
+  --surface-3:rgba(255,255,255,.085);
+  --verre-flou:blur(18px) saturate(150%);
+  --verre-ombre:0 10px 34px rgba(0,0,0,.42);
+
+  --ink:#EDF1F8;
+  --ink-soft:#A6B3CA;
+  --ink-faint:#6E7C96;
+
+  --line:rgba(255,255,255,.11);
+  --rule:rgba(255,255,255,.17);
+  --rule-soft:rgba(255,255,255,.06);
+
+  /* ---- Orange punchy : l'accent, partout où l'œil doit aller ---- */
+  --red:#FF7A1A;
+  --orange-doux:rgba(255,122,26,.14);
+  --orange-bord:rgba(255,122,26,.38);
+
+  /* ---- Bleu profond : second registre ---- */
+  --bleu:#3B82F6;
+
+  /* ---- Sémantique de valeur. `--neg` est distinct de `--red` : l'orange étant
+         devenu l'accent de marque, il ne peut plus vouloir dire « perte ». ---- */
+  --green:#34D399;
+  --green-soft:rgba(52,211,153,.13);
+  --vert-bord:rgba(52,211,153,.34);
+  --neg:#FB7185;
+  --neg-doux:rgba(251,113,133,.13);
+  --neg-bord:rgba(251,113,133,.34);
+  --amber:#FBBF24;
+  --amber-soft:rgba(251,191,36,.12);
+  --ambre-bord:rgba(251,191,36,.32);
+  --surligne-plus:rgba(52,211,153,.28);
+  --surligne-moins:rgba(251,113,133,.28);
+
+  /* ---- Graphiques : palette recalculée pour fond sombre, pas simplement
+         inversée. Contrôlée sur la bande de clarté, le chroma, la séparation
+         daltonienne et le contraste avec le fond. ---- */
+  --s1:#3987e5;--s2:#d95926;--s3:#199e70;--s4:#c98500;
+  --s5:#d55181;--s6:var(--s6);--s7:#9085e9;
+  --viz-nc:#5A6478;
+  --axe:rgba(255,255,255,.24);
+  --grille:rgba(255,255,255,.075);
+
   --display:'Young Serif', Georgia, serif;
   --body:'Public Sans', system-ui, -apple-system, sans-serif;
   --mono:'IBM Plex Mono', ui-monospace, monospace;
+}
+
+/* Le verre a besoin d'un fond qui varie : sur un aplat uniforme, le flou n'a
+   rien à révéler et l'effet disparaît. D'où ces halos colorés fixes. */
+body::before{
+  content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background:
+    radial-gradient(1100px 700px at 12% -8%, rgba(59,130,246,.20), transparent 60%),
+    radial-gradient(900px 600px at 92% 4%, rgba(255,122,26,.14), transparent 62%),
+    radial-gradient(1000px 800px at 50% 108%, rgba(59,130,246,.13), transparent 60%),
+    linear-gradient(175deg, var(--nuit) 0%, var(--paper) 42%, #060A14 100%);
+}
+
+/* Surface de verre réutilisable. `-webkit-` reste nécessaire pour Safari. */
+.verre{
+  background:var(--card);
+  -webkit-backdrop-filter:var(--verre-flou);
+  backdrop-filter:var(--verre-flou);
+  border:1px solid var(--line);
+  box-shadow:var(--verre-ombre), inset 0 1px 0 rgba(255,255,255,.07);
 }
 *{margin:0;padding:0;box-sizing:border-box}
 html{scroll-behavior:smooth}
@@ -46,26 +105,53 @@ button{font-family:inherit;cursor:pointer}
 /* ---------- NAV ---------- */
 .topbar{
   position:sticky;top:0;z-index:50;
-  background:rgba(251,251,247,.92);
-  backdrop-filter:blur(8px);
+  background:rgba(7,11,22,.55);
+  -webkit-backdrop-filter:var(--verre-flou);
+  backdrop-filter:var(--verre-flou);
   border-bottom:1px solid var(--line);
 }
 .topbar-inner{
   max-width:1100px;margin:0 auto;padding:0 20px;
-  display:flex;align-items:center;gap:20px;height:60px;
+  display:flex;align-items:center;gap:16px;height:60px;
 }
 .brand{display:flex;align-items:baseline;gap:8px;flex-shrink:0}
 .brand-name{font-family:var(--display);font-size:1.25rem;letter-spacing:.01em}
 .brand-tag{font-size:.68rem;color:var(--ink-faint);font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em}
-.nav{display:flex;gap:2px;margin-left:auto;overflow-x:auto;scrollbar-width:none}
+/* Neuf entrées ne tenaient pas dans la barre : elles débordaient dans un
+   défilement horizontal à barre masquée, donc invisible. Libellés raccourcis,
+   et un dégradé de bord signale qu'il reste des entrées quand ça déborde. */
+/* La zone se cale à droite mais épouse son contenu (pas de `flex:1`) : c'est
+   elle qui rétrécit quand la place manque, laissant la nav déborder. */
+.nav-zone{position:relative;margin-left:auto;min-width:0;flex:0 1 auto}
+.nav-zone::after{
+  content:"";position:absolute;top:0;right:0;bottom:0;width:34px;pointer-events:none;
+  background:linear-gradient(90deg, transparent, rgba(7,11,22,.92));
+  opacity:0;transition:opacity .2s;
+}
+.nav-zone.deborde::after{opacity:1}
+.nav{
+  /* SURTOUT PAS `justify-content:flex-end` ici : en cas de débordement, le
+     contenu déborderait vers la GAUCHE, hors de la zone défilable, et resterait
+     inatteignable. Le calage à droite est assuré par le `margin-left:auto` de
+     la zone parente, qui laisse le défilement fonctionner normalement. */
+  display:flex;gap:2px;
+  overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;
+}
 .nav::-webkit-scrollbar{display:none}
 .nav button{
-  background:none;border:none;padding:8px 12px;border-radius:8px;
-  font-size:.86rem;font-weight:500;color:var(--ink-soft);white-space:nowrap;
-  transition:background .15s,color .15s;
+  /* `flex:0 0 auto` est indispensable : sans lui les boutons se laissent
+     comprimer par le flex au lieu de déborder, si bien que le conteneur ne
+     défile jamais et que les libellés se tassent jusqu'à devenir illisibles. */
+  flex:0 0 auto;
+  background:none;border:1px solid transparent;padding:7px 11px;border-radius:9px;
+  font-size:.82rem;font-weight:500;color:var(--ink-soft);white-space:nowrap;
+  transition:background .15s,color .15s,border-color .15s;
 }
-.nav button:hover{background:#F0F1EA;color:var(--ink)}
-.nav button[aria-current="true"]{background:var(--ink);color:#fff}
+.nav button:hover{background:var(--surface-3);color:var(--ink);border-color:var(--line)}
+.nav button[aria-current="true"]{
+  background:var(--orange-doux);color:var(--red);border-color:var(--orange-bord);
+  font-weight:600;
+}
 .nav button:focus-visible{outline:2px solid var(--red);outline-offset:2px}
 
 /* ---------- LAYOUT ---------- */
@@ -79,10 +165,12 @@ button{font-family:inherit;cursor:pointer}
   position:relative;
   padding:84px 0 96px;
   overflow:hidden;
+  /* La grille Séyès est conservée — c'est la signature du site — mais en trait
+     clair sur fond sombre, et SANS aplat de fond : les halos colorés du body
+     doivent rester visibles au travers. */
   background:
     repeating-linear-gradient(180deg, transparent 0 31px, var(--rule-soft) 31px 32px),
-    repeating-linear-gradient(90deg, transparent 0 127px, var(--rule-soft) 127px 128px),
-    var(--paper);
+    repeating-linear-gradient(90deg, transparent 0 127px, var(--rule-soft) 127px 128px);
 }
 .hero::before{
   content:"";position:absolute;top:0;bottom:0;left:max(24px, calc(50% - 550px));
@@ -90,7 +178,9 @@ button{font-family:inherit;cursor:pointer}
 }
 .hero::after{
   content:"";position:absolute;inset:0;
-  background:linear-gradient(180deg, rgba(251,251,247,0) 55%, var(--paper) 100%);
+  /* Le fondu part du fond SOMBRE en transparent : interpoler depuis un blanc
+     transparent produirait un voile grisâtre au milieu du dégradé. */
+  background:linear-gradient(180deg, rgba(7,11,22,0) 55%, var(--paper) 100%);
   pointer-events:none;
 }
 .hero .wrap{position:relative;z-index:2}
@@ -103,7 +193,7 @@ button{font-family:inherit;cursor:pointer}
   border:1px solid var(--line);background:var(--card);
   padding:3px 10px;border-radius:99px;font-size:.72rem;
 }
-.chip.fresh{border-color:#CFE3D8;background:var(--green-soft);color:var(--green)}
+.chip.fresh{border-color:var(--vert-bord);background:var(--green-soft);color:var(--green)}
 h1{
   font-family:var(--display);font-weight:400;
   font-size:clamp(2rem, 5.2vw, 3.4rem);
@@ -129,7 +219,7 @@ h1{
 .btn-primary{background:var(--ink);color:#fff}
 .btn-primary:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(28,37,64,.18)}
 .btn-ghost{background:transparent;color:var(--ink)}
-.btn-ghost:hover{background:#F0F1EA}
+.btn-ghost:hover{background:var(--surface-3)}
 
 /* ---------- SECTION HEADERS ---------- */
 .eyebrow{
@@ -181,7 +271,7 @@ h2{
 .env-more.open{display:block}
 .env-more ul{margin:6px 0 0 18px;display:grid;gap:5px}
 .fisc-banner{
-  margin-top:36px;border:1px solid #CFE3D8;background:var(--green-soft);
+  margin-top:36px;border:1px solid var(--vert-bord);background:var(--green-soft);
   border-radius:14px;padding:20px 24px;max-width:820px;
 }
 .fisc-banner h4{font-size:.95rem;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
@@ -203,16 +293,16 @@ h2{
   background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px;
   display:flex;flex-direction:column;
 }
-.fisc-carte.gagnant{border-color:#CFE3D8;box-shadow:0 0 0 1px #CFE3D8}
-.fisc-carte.perdant{border-color:#EFC7C3}
+.fisc-carte.gagnant{border-color:var(--vert-bord);box-shadow:0 0 0 1px var(--vert-bord)}
+.fisc-carte.perdant{border-color:var(--neg-bord)}
 .fisc-carte-tete{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
 .fisc-carte-tete h4{font-family:var(--display);font-weight:400;font-size:1.15rem}
 .fisc-badge{
   font-size:.66rem;font-weight:600;padding:3px 9px;border-radius:99px;white-space:nowrap;
-  background:var(--green-soft);border:1px solid #CFE3D8;color:var(--green);
+  background:var(--green-soft);border:1px solid var(--vert-bord);color:var(--green);
 }
-.fisc-badge.neutre{background:#F0F1EA;border-color:var(--line);color:var(--ink-soft)}
-.fisc-badge.alerte{background:#FBEBE9;border-color:#EFC7C3;color:var(--red)}
+.fisc-badge.neutre{background:var(--surface-3);border-color:var(--line);color:var(--ink-soft)}
+.fisc-badge.alerte{background:var(--neg-doux);border-color:var(--neg-bord);color:var(--neg)}
 .fisc-calcul{list-style:none;display:grid;gap:9px;margin:0}
 .fisc-calcul li{
   display:flex;justify-content:space-between;align-items:baseline;gap:12px;
@@ -232,7 +322,7 @@ h2{
 .fisc-cmt{margin-top:14px;font-size:.82rem;color:var(--ink-soft);line-height:1.6}
 .fisc-cmt strong{color:var(--ink)}
 .fisc-conclusion{
-  margin-top:18px;padding:14px 18px;background:#FCFCF9;border:1px solid var(--line);
+  margin-top:18px;padding:14px 18px;background:var(--surface-2);border:1px solid var(--line);
   border-left:3px solid var(--ink);border-radius:0 10px 10px 0;
   font-size:.9rem;color:var(--ink-soft);max-width:900px;line-height:1.65;
 }
@@ -254,9 +344,9 @@ h2{
 .trait span:last-child{font-family:var(--mono);font-size:.8rem}
 .alloc{display:flex;height:16px;border-radius:8px;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(28,37,64,.08)}
 .alloc div{height:100%}
-.a-act{background:#2F6FED}
-.a-obl{background:#12A67C}
-.a-liq{background:#F0A830}
+.a-act{background:var(--bleu)}
+.a-obl{background:var(--green)}
+.a-liq{background:var(--red)}
 .alloc-legende{display:flex;gap:6px 14px;flex-wrap:wrap;font-size:.76rem;color:var(--ink-soft)}
 .alloc-legende b{font-family:var(--mono);font-size:.78rem;color:var(--ink)}
 .alloc-legende i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
@@ -267,7 +357,7 @@ h2{
   padding:9px 12px;font-size:.84rem;font-weight:600;color:var(--ink);
   transition:background .15s,border-color .15s;
 }
-.profil-self:hover{background:var(--green-soft);border-color:#CFE3D8}
+.profil-self:hover{background:var(--green-soft);border-color:var(--vert-bord)}
 .profil-card.selected .profil-self{background:var(--green);border-color:var(--green);color:#fff}
 .profil-self:focus-visible{outline:2px solid var(--red);outline-offset:2px}
 
@@ -300,14 +390,14 @@ table{width:100%;border-collapse:collapse;font-size:.86rem;min-width:880px}
 thead th{
   text-align:left;font-size:.7rem;text-transform:uppercase;letter-spacing:.07em;
   color:var(--ink-faint);font-weight:600;padding:13px 14px;border-bottom:1px solid var(--line);
-  background:#FCFCF9;position:sticky;top:0;
+  background:var(--surface-2);position:sticky;top:0;
 }
 thead th.sortable{cursor:pointer;user-select:none}
 thead th.sortable:hover{color:var(--ink)}
 thead th .arrow{font-size:.8em;opacity:.6}
-tbody td{padding:12px 14px;border-bottom:1px solid #F0F1EB;vertical-align:top}
+tbody td{padding:12px 14px;border-bottom:1px solid var(--surface-3);vertical-align:top}
 tbody tr:last-child td{border-bottom:none}
-tbody tr:hover{background:#FAFAF5}
+tbody tr:hover{background:var(--surface-2)}
 td.mono{font-family:var(--mono);font-size:.82rem;white-space:nowrap}
 .etf-nom{font-weight:600}
 .etf-ticker{font-family:var(--mono);font-size:.75rem;color:var(--ink-faint)}
@@ -315,9 +405,9 @@ td.mono{font-family:var(--mono);font-size:.82rem;white-space:nowrap}
   display:inline-block;font-size:.7rem;font-weight:600;padding:2px 8px;border-radius:99px;
   border:1px solid var(--line);color:var(--ink-soft);white-space:nowrap;
 }
-.tag.pea{background:var(--green-soft);border-color:#CFE3D8;color:var(--green)}
+.tag.pea{background:var(--green-soft);border-color:var(--vert-bord);color:var(--green)}
 .tag.non{color:var(--ink-faint)}
-.tag.alerte{background:#FBEBE9;border-color:#EFC7C3;color:var(--red)}
+.tag.alerte{background:var(--neg-doux);border-color:var(--neg-bord);color:var(--neg)}
 .vide{padding:36px 20px;text-align:center;color:var(--ink-faint);font-size:.9rem}
 
 
@@ -326,7 +416,7 @@ td.mono{font-family:var(--mono);font-size:.82rem;white-space:nowrap}
   border:0;border-bottom:1.5px dotted var(--red);background:none;padding:0;
   font:inherit;color:inherit;cursor:help;
 }
-.terme:hover{background:#FBEBE9}
+.terme:hover{background:var(--neg-doux)}
 .terme:focus-visible{outline:2px solid var(--red);outline-offset:2px}
 .terme.fiche{border-bottom-style:solid;font-weight:600;cursor:pointer}
 .terme.fiche::after{content:"\00a0\203A";color:var(--red);font-weight:700}
@@ -338,10 +428,10 @@ td.mono{font-family:var(--mono);font-size:.82rem;white-space:nowrap}
   font-size:.84rem;line-height:1.5;box-shadow:0 10px 30px rgba(28,37,64,.3);
 }
 #tooltip.on{opacity:1;transform:translateY(0)}
-#tooltip b{color:#FFD2CD}
+#tooltip b{color:var(--surligne-moins)}
 #tooltip .tt-plus{
   display:block;margin-top:8px;font-family:var(--mono);font-size:.68rem;
-  letter-spacing:.06em;text-transform:uppercase;color:#9BA4BF;
+  letter-spacing:.06em;text-transform:uppercase;color:var(--ink-faint);
 }
 
 .modal-fond{
@@ -374,13 +464,13 @@ td.mono{font-family:var(--mono);font-size:.82rem;white-space:nowrap}
   border:1px solid var(--line);background:var(--paper);font-size:1.15rem;line-height:1;
   color:var(--ink-soft);
 }
-.modal-close:hover{background:#F0F1EA;color:var(--ink)}
+.modal-close:hover{background:var(--surface-3);color:var(--ink)}
 .modal-close:focus-visible{outline:2px solid var(--red);outline-offset:2px}
 
 /* ---------- SURLIGNAGE AVANTAGE / POINT DE VIGILANCE ---------- */
-.plus,.moins{padding:0 3px;font-weight:600;color:var(--ink);border-radius:2px}
-.plus{background:linear-gradient(180deg,transparent 52%,#A8EBCB 52%)}
-.moins{background:linear-gradient(180deg,transparent 52%,#FBD3CE 52%)}
+.plus,.moins{padding:0 3px;font-weight:600;color:var(--ink);border-radius:3px}
+.plus{background:linear-gradient(180deg,transparent 52%,var(--surligne-plus) 52%)}
+.moins{background:linear-gradient(180deg,transparent 52%,var(--surligne-moins) 52%)}
 dd .plus,dd .moins{display:inline-block}
 
 /* ---------- LES TROIS ZÉROS ---------- */
@@ -441,9 +531,9 @@ dd .plus,dd .moins{display:inline-block}
 .seuil-seg{display:flex;flex-direction:column;justify-content:center;padding:6px 8px;line-height:1.3}
 .seuil-seg b{font-weight:600}
 .seuil-seg small{font-size:.66rem;opacity:.8;margin-top:1px}
-.seuil-seg.avant{background:#FBEBE9;color:var(--red);flex:0 0 40%}
+.seuil-seg.avant{background:var(--neg-doux);color:var(--neg);flex:0 0 40%}
 .seuil-seg.apres{background:var(--green-soft);color:var(--green);flex:1}
-.seuil-seg.continu{background:#F4F4EE;color:var(--ink-soft);flex:1}
+.seuil-seg.continu{background:var(--surface-3);color:var(--ink-soft);flex:1}
 .seuil-pivot{
   flex:0 0 auto;display:flex;align-items:center;padding:0 9px;
   background:var(--ink);color:#fff;font-family:var(--mono);font-size:.68rem;font-weight:600;
@@ -516,8 +606,8 @@ tbody td.col-nom,thead th.col-nom{
   position:sticky;left:0;background:var(--card);z-index:2;
   box-shadow:1px 0 0 var(--line);
 }
-thead th.col-nom{background:#FCFCF9;z-index:3}
-tbody tr:hover td.col-nom{background:#FAFAF5}
+thead th.col-nom{background:var(--surface-2);z-index:3}
+tbody tr:hover td.col-nom{background:var(--surface-2)}
 tr.detail-row>td{position:static}
 
 /* ---------- INVESTIR DURABLE ---------- */
@@ -537,9 +627,9 @@ tr.detail-row>td{position:static}
 .etiq th{
   text-align:left;font-size:.7rem;text-transform:uppercase;letter-spacing:.07em;
   color:var(--ink-faint);font-weight:600;padding:13px 14px;
-  border-bottom:1px solid var(--line);background:#FCFCF9;
+  border-bottom:1px solid var(--line);background:var(--surface-2);
 }
-.etiq td{padding:13px 14px;border-bottom:1px solid #F0F1EB;vertical-align:top}
+.etiq td{padding:13px 14px;border-bottom:1px solid var(--surface-3);vertical-align:top}
 .etiq tr:last-child td{border-bottom:none}
 .etiq .nom{font-weight:600;white-space:nowrap}
 .etiq .nom small{display:block;font-weight:400;font-size:.74rem;color:var(--ink-faint);white-space:normal}
@@ -593,9 +683,9 @@ tr.detail-row>td{position:static}
 .sondage-choix button:focus-visible{outline:2px solid var(--red);outline-offset:2px}
 .sondage-reponse{display:none;margin-top:22px;padding:18px 20px;border-radius:11px;font-size:.92rem}
 .sondage-reponse.visible{display:block}
-.sondage-reponse.v-oui{background:var(--green-soft);border:1px solid #CFE3D8}
-.sondage-reponse.v-hesite{background:var(--amber-soft);border:1px solid #E8DBB5}
-.sondage-reponse.v-non{background:#FBEBE9;border:1px solid #EFC7C3}
+.sondage-reponse.v-oui{background:var(--green-soft);border:1px solid var(--vert-bord)}
+.sondage-reponse.v-hesite{background:var(--amber-soft);border:1px solid var(--ambre-bord)}
+.sondage-reponse.v-non{background:var(--neg-doux);border:1px solid var(--neg-bord)}
 .sondage-restart{margin-top:12px;background:none;border:none;font-size:.8rem;text-decoration:underline;color:var(--ink-faint)}
 
 /* ---------- SUITE / FOOTER ---------- */
@@ -610,7 +700,7 @@ tr.detail-row>td{position:static}
 .suite button:hover{color:var(--red);border-bottom-color:var(--red)}
 .suite button:focus-visible{outline:2px solid var(--red);outline-offset:3px}
 footer{
-  border-top:1px solid var(--line);margin-top:40px;background:#F7F7F1;
+  border-top:1px solid var(--line);margin-top:40px;background:var(--surface-2);
 }
 .footer-inner{max-width:1100px;margin:0 auto;padding:36px 20px 48px}
 .footer-legal{font-size:.78rem;color:var(--ink-faint);max-width:80ch;line-height:1.7}
@@ -656,13 +746,13 @@ footer{
   transition:background .15s,color .15s;
 }
 .env-choix button:last-child{border-right:none}
-.env-choix button:hover{background:#F0F1EA;color:var(--ink)}
+.env-choix button:hover{background:var(--surface-3);color:var(--ink)}
 .env-choix button[aria-pressed="true"]{background:var(--ink);color:#fff}
 .env-choix button:focus-visible{outline:2px solid var(--red);outline-offset:-2px}
 .env-choix-note{margin-top:9px;font-size:.78rem;color:var(--ink-soft);line-height:1.5}
 .env-choix-note strong{color:var(--ink)}
 .env-choix-note.avert{
-  background:var(--amber-soft);border:1px solid #E8DBB5;border-radius:8px;
+  background:var(--amber-soft);border:1px solid var(--ambre-bord);border-radius:8px;
   padding:8px 11px;color:var(--amber);
 }
 
@@ -689,7 +779,7 @@ footer{
   background:none;border:none;color:var(--ink-faint);font-size:1.1rem;line-height:1;
   padding:4px;border-radius:6px;
 }
-.alloc-ligne .sup:hover{background:#FBEBE9;color:var(--red)}
+.alloc-ligne .sup:hover{background:var(--neg-doux);color:var(--neg)}
 .alloc-actions{display:flex;gap:10px;align-items:center;margin-top:14px;flex-wrap:wrap}
 .alloc-add{
   background:none;border:1px dashed var(--line);border-radius:8px;padding:7px 12px;
@@ -699,9 +789,9 @@ footer{
 .alloc-add[disabled]{opacity:.4;cursor:not-allowed}
 .alloc-total{
   margin-left:auto;font-family:var(--mono);font-size:.82rem;padding:4px 10px;border-radius:99px;
-  border:1px solid #CFE3D8;background:var(--green-soft);color:var(--green);white-space:nowrap;
+  border:1px solid var(--vert-bord);background:var(--green-soft);color:var(--green);white-space:nowrap;
 }
-.alloc-total.ko{border-color:#EFC7C3;background:#FBEBE9;color:var(--red)}
+.alloc-total.ko{border-color:var(--neg-bord);background:var(--neg-doux);color:var(--neg)}
 
 /* curseur de date */
 .sim-date-val{font-family:var(--mono);font-size:1.02rem;font-weight:600;margin-bottom:9px}
@@ -711,7 +801,7 @@ input[type="range"].sim-range:focus-visible{outline:2px solid var(--red);outline
 .sim-bornes{display:flex;justify-content:space-between;font-family:var(--mono);font-size:.7rem;color:var(--ink-faint);margin-top:3px}
 .sim-contrainte{
   margin-top:10px;font-size:.78rem;color:var(--amber);background:var(--amber-soft);
-  border:1px solid #E8DBB5;border-radius:8px;padding:8px 11px;line-height:1.5;
+  border:1px solid var(--ambre-bord);border-radius:8px;padding:8px 11px;line-height:1.5;
 }
 .sim-contrainte strong{color:var(--ink)}
 
@@ -729,7 +819,7 @@ input[type="range"].sim-range:focus-visible{outline:2px solid var(--red);outline
 }
 .hero-bloc.sec .hero-val{font-size:1.35rem;font-weight:600}
 .hero-val.pos{color:var(--green)}
-.hero-val.neg{color:var(--red)}
+.hero-val.neg{color:var(--neg)}
 .sim-vide{
   background:var(--card);border:1px dashed var(--line);border-radius:14px;
   padding:44px 26px;text-align:center;color:var(--ink-faint);font-size:.92rem;
@@ -747,15 +837,15 @@ input[type="range"].sim-range:focus-visible{outline:2px solid var(--red);outline
    il n'est jamais mis à l'échelle. Un étirement CSS déformerait la typo des
    axes (11px dessinés rendus à 14px sur large, à 6px sur mobile). */
 .chart-hote svg{display:block;max-width:100%;overflow:visible}
-.axe{stroke:#C3C2B7;stroke-width:1}
-.grille{stroke:#E1E0D9;stroke-width:1}
-.axe-txt{fill:#898781;font-size:11px;font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums}
-.traj{fill:none;stroke:#2a78d6;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
-.traj-aire{fill:#2a78d6;opacity:.10}
-.seuil{stroke:#8A92A8;stroke-width:1;stroke-dasharray:4 4}
-.seuil-txt{fill:#52514e;font-size:11px;font-family:'IBM Plex Mono',monospace}
-.bout{fill:#2a78d6;stroke:#FFFFFF;stroke-width:2}
-.viseur{stroke:#8A92A8;stroke-width:1}
+.axe{stroke:var(--axe);stroke-width:1}
+.grille{stroke:var(--grille);stroke-width:1}
+.axe-txt{fill:var(--ink-faint);font-size:11px;font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums}
+.traj{fill:none;stroke:var(--s1);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.traj-aire{fill:var(--s1);opacity:.10}
+.seuil{stroke:var(--ink-faint);stroke-width:1;stroke-dasharray:4 4}
+.seuil-txt{fill:var(--ink-soft);font-size:11px;font-family:'IBM Plex Mono',monospace}
+.bout{fill:var(--s1);stroke:var(--card);stroke-width:2}
+.viseur{stroke:var(--ink-faint);stroke-width:1}
 .chart-info{
   position:absolute;pointer-events:none;background:var(--ink);color:#fff;
   border-radius:8px;padding:8px 11px;font-size:.78rem;line-height:1.45;white-space:nowrap;
@@ -774,7 +864,7 @@ input[type="range"].sim-range:focus-visible{outline:2px solid var(--red);outline
 .sim-detail{margin-top:18px}
 .sim-detail table{min-width:560px}
 td.pos{color:var(--green);font-weight:600}
-td.neg{color:var(--red);font-weight:600}
+td.neg{color:var(--neg);font-weight:600}
 
 @media (max-width:900px){
   .sim-layout{grid-template-columns:1fr}
@@ -786,11 +876,11 @@ td.neg{color:var(--red);font-weight:600}
   padding:6px 11px;font-size:.78rem;font-weight:600;color:var(--ink);white-space:nowrap;
   transition:background .15s,border-color .15s,color .15s;
 }
-.etf-more-btn:hover{background:#F0F1EA;border-color:var(--ink-faint)}
+.etf-more-btn:hover{background:var(--surface-3);border-color:var(--ink-faint)}
 .etf-more-btn:focus-visible{outline:2px solid var(--red);outline-offset:2px}
 .etf-more-btn[aria-expanded="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
-tr.detail-row>td{padding:0;background:#FCFCF9;border-bottom:1px solid var(--line)}
-tr.detail-row:hover>td{background:#FCFCF9}
+tr.detail-row>td{padding:0;background:var(--surface-2);border-bottom:1px solid var(--line)}
+tr.detail-row:hover>td{background:var(--surface-2)}
 .detail{
   /* La fiche est du texte, pas du tableau : on l'épingle à la zone visible du
      conteneur pour qu'elle se lise sans défilement horizontal, alors que la
@@ -798,15 +888,12 @@ tr.detail-row:hover>td{background:#FCFCF9}
   position:sticky;left:0;
   width:min(1060px, calc(100vw - 42px));
   padding:26px 16px 28px;
-  /* palette catégorielle validée (CVD + contraste, surface #FCFCF9) */
-  --s1:#2a78d6;--s2:#eb6834;--s3:#1baf7a;--s4:#eda100;
-  --s5:#e87ba4;--s6:#008300;--s7:#4a3aa7;
-  /* gris neutre : ce n'est pas une catégorie, c'est ce que la source ne dit pas */
-  --viz-nc:#C7C6BF;
+  /* Les teintes de série (--s1 à --s7) et le gris « non ventilé » viennent de
+     :root : les redéclarer ici en se référençant elles-mêmes les invaliderait. */
 }
 .etf-intro{
   max-width:900px;margin-bottom:22px;padding:16px 20px;
-  background:#FCFCF9;border:1px solid var(--line);border-left:3px solid var(--ink);border-radius:0 10px 10px 0;
+  background:var(--surface-2);border:1px solid var(--line);border-left:3px solid var(--ink);border-radius:0 10px 10px 0;
 }
 .etf-intro h4{
   font-family:var(--mono);font-size:.66rem;letter-spacing:.09em;text-transform:uppercase;
@@ -838,8 +925,8 @@ tr.detail-row:hover>td{background:#FCFCF9}
 .hold li{display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:baseline}
 .hold .hn{font-size:.83rem;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .hold .hp{font-family:var(--mono);font-size:.78rem;color:var(--ink-soft);font-variant-numeric:tabular-nums}
-.hold .hbar{grid-column:1/-1;height:6px;background:#EDEEE8;border-radius:0 3px 3px 0}
-.hold .hbar span{display:block;height:100%;background:#2a78d6;border-radius:0 3px 3px 0}
+.hold .hbar{grid-column:1/-1;height:6px;background:var(--surface-3);border-radius:0 3px 3px 0}
+.hold .hbar span{display:block;height:100%;background:var(--s1);border-radius:0 3px 3px 0}
 
 /* barre empilée 100 % — part-au-tout */
 .stack{display:flex;gap:2px;height:22px;border-radius:4px;overflow:hidden;margin-bottom:14px}
@@ -856,6 +943,62 @@ tr.detail-row:hover>td{background:#FCFCF9}
 }
 .detail-src a{color:var(--ink-soft)}
 .detail-empty{font-size:.85rem;color:var(--ink-soft);max-width:70ch}
+
+/* =====================================================================
+   VERRE — appliqué aux conteneurs existants
+   Un seul bloc plutôt que des retouches éparpillées : la liste des surfaces
+   vitrées reste ainsi lisible d'un coup d'œil, et modifiable en un endroit.
+   ===================================================================== */
+.face, .filtres, .table-scroll, .sim-panel, .sim-hero, .chart-carte, .sim-vide,
+.profil-card, .sondage, .fisc-carte, .env-choix, .notice, .fisc-banner,
+.etf-intro, .fisc-conclusion, .hero-promesse, .promesse-item, .seuil-axe{
+  -webkit-backdrop-filter:var(--verre-flou);
+  backdrop-filter:var(--verre-flou);
+}
+.face, .filtres, .table-scroll, .sim-panel, .sim-hero, .chart-carte,
+.profil-card, .sondage, .fisc-carte, .hero-promesse{
+  background:var(--card);
+  box-shadow:var(--verre-ombre), inset 0 1px 0 rgba(255,255,255,.07);
+}
+/* La lueur orange au survol remplace l'assombrissement du thème clair. */
+.flip:hover .face, .profil-card:hover, .fisc-carte:hover{
+  border-color:var(--orange-bord);
+  box-shadow:0 10px 40px rgba(255,122,26,.10), inset 0 1px 0 rgba(255,255,255,.10);
+}
+tbody tr:hover{background:var(--surface-3)}
+thead th{background:rgba(255,255,255,.04)}
+tr.detail-row>td, tr.detail-row:hover>td{background:rgba(255,255,255,.025)}
+
+/* Champs de saisie : creusés dans le verre plutôt que posés dessus. */
+.filtre select, .filtre input[type="search"], .sim-montant input,
+.alloc-ligne select, .alloc-ligne .poids, .env-choix button{
+  background:rgba(255,255,255,.05);color:var(--ink);
+}
+.filtre select option, .alloc-ligne select option{background:#0C1322;color:var(--ink)}
+input[type="range"]{accent-color:var(--red)}
+.filtre-check input{accent-color:var(--red)}
+
+/* Boutons principaux : l'orange devient la couleur d'action. */
+.btn-primary{background:var(--red);color:#0A0A0A;border-color:var(--red);font-weight:700}
+.btn-primary:hover{box-shadow:0 8px 26px rgba(255,122,26,.34)}
+.btn-ghost{color:var(--ink);border-color:var(--line);background:rgba(255,255,255,.04)}
+.btn-ghost:hover{background:var(--surface-3);border-color:var(--orange-bord)}
+.etf-more-btn[aria-expanded="true"]{background:var(--red);border-color:var(--red);color:#0A0A0A}
+.env-choix button[aria-pressed="true"]{background:var(--red);color:#0A0A0A}
+.profil-card.selected{border-color:var(--red);box-shadow:0 0 0 1px var(--red)}
+.profil-card.selected .profil-self{background:var(--red);border-color:var(--red);color:#0A0A0A}
+.alloc-add:hover{border-color:var(--orange-bord);color:var(--red)}
+.chart-info{background:rgba(10,15,28,.94);border:1px solid var(--line)}
+.fisc-num{background:var(--red);color:#0A0A0A}
+.seuil-pivot{background:var(--red);color:#0A0A0A}
+.hold .hbar{background:rgba(255,255,255,.07)}
+.hold .hbar span{background:var(--s1)}
+.a-liq{background:rgba(255,255,255,.16)}
+.bout{stroke:#0A0F1C}
+footer{background:rgba(255,255,255,.025);border-top:1px solid var(--line)}
+
+/* Le souligné du titre passe à l'orange, comme le reste des accents. */
+.souligne path{stroke:var(--red)}
 
 @media (max-width:640px){
   .detail{padding:20px 12px 24px}
@@ -881,17 +1024,17 @@ tr.detail-row:hover>td{background:#FCFCF9}
       <span class="brand-name">Boussole</span>
       <span class="brand-tag">prototype</span>
     </div>
-    <nav class="nav" aria-label="Sections">
+    <div class="nav-zone" id="nav-zone"><nav class="nav" id="nav" aria-label="Sections">
       <button data-page="accueil" aria-current="true">Accueil</button>
       <button data-page="comprendre">Comprendre</button>
-      <button data-page="fiscalite">Combien d'impôts&nbsp;?</button>
-      <button data-page="profils">Profils types</button>
-      <button data-page="etf">Comparer les ETF</button>
-      <button data-page="durable">Investir durable</button>
+      <button data-page="fiscalite">Impôts</button>
+      <button data-page="profils">Profils</button>
+      <button data-page="etf">ETF</button>
+      <button data-page="durable">Durable</button>
       <button data-page="simulateur">Simuler</button>
-      <button data-page="courtiers">Comparer les courtiers</button>
-      <button data-page="action">Passer à l'action</button>
-    </nav>
+      <button data-page="courtiers">Courtiers</button>
+      <button data-page="action">Agir</button>
+    </nav></div>
   </div>
 </header>
 
@@ -2411,6 +2554,23 @@ function goto(id){
   if(typeof onPageChange === 'function') onPageChange(id);
 }
 navBtns.forEach(b => b.addEventListener('click', () => goto(b.dataset.page)));
+
+/* La barre de défilement de la nav est masquée : sans repère visuel, rien
+   n'indique qu'il reste des entrées hors champ. Le dégradé de bord ne
+   s'affiche donc que lorsqu'il y a effectivement de quoi défiler. */
+(() => {
+  const zone = document.getElementById('nav-zone');
+  const nav = document.getElementById('nav');
+  if(!zone || !nav) return;
+  const majDebord = () => {
+    const reste = nav.scrollWidth - nav.clientWidth - nav.scrollLeft;
+    zone.classList.toggle('deborde', reste > 4);
+  };
+  nav.addEventListener('scroll', majDebord);
+  window.addEventListener('resize', majDebord);
+  new ResizeObserver(majDebord).observe(nav);
+  majDebord();
+})();
 document.querySelectorAll('[data-goto]').forEach(el => {
   el.addEventListener('click', e => { e.preventDefault(); goto(el.dataset.goto); });
 });
@@ -3427,7 +3587,7 @@ fetch('data/cours.json', {cache: 'no-cache'})
       Ouvert directement depuis le disque, le navigateur bloque la lecture de
       <code>data/cours.json</code> (règle de sécurité <em>file://</em>).<br>
       Lancez un serveur local depuis le dossier du projet&nbsp;:<br>
-      <code style="display:inline-block;margin-top:8px;background:#F0F1EA;padding:6px 10px;border-radius:6px">python -m http.server 8000</code><br>
+      <code style="display:inline-block;margin-top:8px;background:var(--surface-3);padding:6px 10px;border-radius:6px">python -m http.server 8000</code><br>
       puis ouvrez <code>http://localhost:8000</code>.<br>
       <small style="opacity:.7">(${err.message})</small>`;
   });

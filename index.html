@@ -154,7 +154,10 @@ h2{
 .notice.amber{border-left-color:var(--amber);background:var(--amber-soft)}
 
 /* ---------- ENVELOPPES ---------- */
-.env-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-top:32px}
+/* `align-items:start` : sans lui, la grille étire les trois cartes à la hauteur
+   de la plus longue, ce qui creusait jusqu'à 400 px de vide sous les rectos les
+   plus courts. Chaque carte se dimensionne désormais sur son propre contenu. */
+.env-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-top:32px;align-items:start}
 .env-card{
   background:var(--card);border:1px solid var(--line);border-radius:14px;
   padding:24px;display:flex;flex-direction:column;
@@ -184,6 +187,56 @@ h2{
 .fisc-banner h4{font-size:.95rem;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .fisc-banner p{font-size:.88rem;color:var(--ink-soft);margin-top:8px}
 .fisc-banner .num{font-family:var(--mono);font-weight:600;color:var(--green)}
+
+/* ---------- FISCALITÉ : scénarios chiffrés ---------- */
+.fisc-scenario{margin-top:42px}
+.fisc-titre{display:flex;gap:16px;align-items:flex-start;margin-bottom:22px}
+.fisc-num{
+  flex:0 0 auto;width:38px;height:38px;border-radius:50%;background:var(--ink);color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-weight:600;font-size:1rem;
+}
+.fisc-titre h3{font-family:var(--display);font-weight:400;font-size:1.35rem}
+.fisc-titre p{margin-top:6px;font-size:.92rem;color:var(--ink-soft);max-width:64ch}
+.fisc-grille{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:16px;align-items:start}
+.fisc-carte{
+  background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px;
+  display:flex;flex-direction:column;
+}
+.fisc-carte.gagnant{border-color:#CFE3D8;box-shadow:0 0 0 1px #CFE3D8}
+.fisc-carte.perdant{border-color:#EFC7C3}
+.fisc-carte-tete{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
+.fisc-carte-tete h4{font-family:var(--display);font-weight:400;font-size:1.15rem}
+.fisc-badge{
+  font-size:.66rem;font-weight:600;padding:3px 9px;border-radius:99px;white-space:nowrap;
+  background:var(--green-soft);border:1px solid #CFE3D8;color:var(--green);
+}
+.fisc-badge.neutre{background:#F0F1EA;border-color:var(--line);color:var(--ink-soft)}
+.fisc-badge.alerte{background:#FBEBE9;border-color:#EFC7C3;color:var(--red)}
+.fisc-calcul{list-style:none;display:grid;gap:9px;margin:0}
+.fisc-calcul li{
+  display:flex;justify-content:space-between;align-items:baseline;gap:12px;
+  font-size:.86rem;padding-bottom:8px;border-bottom:1px dashed var(--line);
+}
+.fisc-calcul li:last-child{border-bottom:none;padding-bottom:0}
+.fisc-calcul span{color:var(--ink-soft)}
+.fisc-calcul small{display:block;font-size:.72rem;color:var(--ink-faint);margin-top:1px}
+.fisc-calcul b{font-family:var(--mono);font-size:.86rem;white-space:nowrap;font-variant-numeric:tabular-nums}
+.fisc-calcul b.ok{color:var(--green)}
+.fisc-total{
+  margin-top:16px;padding-top:14px;border-top:1.5px solid var(--ink);
+  display:flex;justify-content:space-between;align-items:baseline;gap:12px;
+}
+.fisc-total span{font-size:.78rem;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-faint);font-family:var(--mono)}
+.fisc-total b{font-size:1.5rem;font-weight:700;letter-spacing:-.01em}
+.fisc-cmt{margin-top:14px;font-size:.82rem;color:var(--ink-soft);line-height:1.6}
+.fisc-cmt strong{color:var(--ink)}
+.fisc-conclusion{
+  margin-top:18px;padding:14px 18px;background:#FCFCF9;border:1px solid var(--line);
+  border-left:3px solid var(--ink);border-radius:0 10px 10px 0;
+  font-size:.9rem;color:var(--ink-soft);max-width:900px;line-height:1.65;
+}
+.fisc-conclusion strong{color:var(--ink)}
 
 /* ---------- PROFILS ---------- */
 .profil-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(255px,1fr));gap:16px;margin-top:32px}
@@ -371,6 +424,34 @@ dd .plus,dd .moins{display:inline-block}
 .promesses-pied strong{color:var(--ink-soft)}
 
 /* ---------- CARTES ENVELOPPES QUI PIVOTENT ---------- */
+/* ---------- Recto des cartes : l'axe du point de bascule ----------
+   Les deux faces sont superposées en grille : la hauteur de la carte est donc
+   imposée par la plus longue, le verso. Le recto doit porter assez de matière
+   pour ne pas paraître creux — et le seuil de durée est précisément ce qui
+   distingue les enveloppes entre elles. */
+.seuil{margin-top:16px;border-top:1px dashed var(--line);padding-top:14px}
+.seuil-titre{
+  font-family:var(--mono);font-size:.66rem;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--ink-faint);margin-bottom:9px;
+}
+.seuil-axe{
+  display:flex;align-items:stretch;min-height:44px;border-radius:9px;overflow:hidden;
+  border:1px solid var(--line);font-size:.74rem;text-align:center;
+}
+.seuil-seg{display:flex;flex-direction:column;justify-content:center;padding:6px 8px;line-height:1.3}
+.seuil-seg b{font-weight:600}
+.seuil-seg small{font-size:.66rem;opacity:.8;margin-top:1px}
+.seuil-seg.avant{background:#FBEBE9;color:var(--red);flex:0 0 40%}
+.seuil-seg.apres{background:var(--green-soft);color:var(--green);flex:1}
+.seuil-seg.continu{background:#F4F4EE;color:var(--ink-soft);flex:1}
+.seuil-pivot{
+  flex:0 0 auto;display:flex;align-items:center;padding:0 9px;
+  background:var(--ink);color:#fff;font-family:var(--mono);font-size:.68rem;font-weight:600;
+  white-space:nowrap;
+}
+.seuil-note{margin-top:9px;font-size:.78rem;color:var(--ink-soft);line-height:1.5}
+.seuil-note strong{color:var(--ink)}
+
 .flip{perspective:1800px}
 .flip-inner{
   display:grid;transform-style:preserve-3d;
@@ -568,6 +649,23 @@ footer{
 }
 .sim-montant span{font-family:var(--mono);font-size:1.05rem;color:var(--ink-faint)}
 .sim-montant input:focus-visible{outline:2px solid var(--red);outline-offset:1px}
+.env-choix{display:flex;gap:0;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.env-choix button{
+  flex:1;background:var(--paper);border:none;border-right:1px solid var(--line);
+  padding:9px 6px;font-size:.82rem;font-weight:600;color:var(--ink-soft);
+  transition:background .15s,color .15s;
+}
+.env-choix button:last-child{border-right:none}
+.env-choix button:hover{background:#F0F1EA;color:var(--ink)}
+.env-choix button[aria-pressed="true"]{background:var(--ink);color:#fff}
+.env-choix button:focus-visible{outline:2px solid var(--red);outline-offset:-2px}
+.env-choix-note{margin-top:9px;font-size:.78rem;color:var(--ink-soft);line-height:1.5}
+.env-choix-note strong{color:var(--ink)}
+.env-choix-note.avert{
+  background:var(--amber-soft);border:1px solid #E8DBB5;border-radius:8px;
+  padding:8px 11px;color:var(--amber);
+}
+
 .sim-preset{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
 .sim-preset button{
   background:var(--paper);border:1px solid var(--line);border-radius:99px;
@@ -706,6 +804,20 @@ tr.detail-row:hover>td{background:#FCFCF9}
   /* gris neutre : ce n'est pas une catégorie, c'est ce que la source ne dit pas */
   --viz-nc:#C7C6BF;
 }
+.etf-intro{
+  max-width:900px;margin-bottom:22px;padding:16px 20px;
+  background:#FCFCF9;border:1px solid var(--line);border-left:3px solid var(--ink);border-radius:0 10px 10px 0;
+}
+.etf-intro h4{
+  font-family:var(--mono);font-size:.66rem;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--ink-faint);margin-bottom:7px;
+}
+.etf-intro p{font-size:.9rem;color:var(--ink-soft);line-height:1.65}
+.etf-intro p strong{color:var(--ink)}
+.etf-intro-lien{margin-top:10px;font-size:.82rem}
+.etf-intro-lien a{color:var(--ink);font-weight:600;text-decoration:underline;text-underline-offset:2px}
+.etf-intro-lien a:hover{color:var(--red)}
+
 .detail-flag{
   display:flex;gap:10px;align-items:flex-start;
   border:1px solid var(--line);border-left:3px solid var(--amber);background:var(--amber-soft);
@@ -772,6 +884,7 @@ tr.detail-row:hover>td{background:#FCFCF9}
     <nav class="nav" aria-label="Sections">
       <button data-page="accueil" aria-current="true">Accueil</button>
       <button data-page="comprendre">Comprendre</button>
+      <button data-page="fiscalite">Combien d'impôts&nbsp;?</button>
       <button data-page="profils">Profils types</button>
       <button data-page="etf">Comparer les ETF</button>
       <button data-page="durable">Investir durable</button>
@@ -902,6 +1015,18 @@ tr.detail-row:hover>td{background:#FCFCF9}
               <div class="fact"><dt>Avant 5 ans (retrait)</dt><dd><span class="moins">31,4 % sur les gains</span></dd></div>
               <div class="fact"><dt>Après 5 ans</dt><dd><span class="plus">0 % d'impôt</span> + 18,6 % de <button type="button" class="terme" data-t="ps">prél. sociaux</button></dd></div>
             </dl>
+
+            <div class="seuil">
+              <div class="seuil-titre">Le point de bascule</div>
+              <div class="seuil-axe" role="img" aria-label="Avant 5 ans : 31,4 % sur les gains et clôture du plan. Après 5 ans : 0 % d'impôt sur le revenu, 18,6 % de prélèvements sociaux.">
+                <div class="seuil-seg avant"><b>31,4 %</b><small>+ clôture du plan</small></div>
+                <div class="seuil-pivot">5 ans</div>
+                <div class="seuil-seg apres"><b>0 % d'impôt</b><small>+ 18,6 % de prél. sociaux</small></div>
+              </div>
+              <p class="seuil-note">Les 5 ans comptent depuis <strong>l'ouverture</strong>, pas depuis
+                chaque versement. D'où l'intérêt d'ouvrir tôt, même avec 100 € : le compteur démarre.</p>
+            </div>
+
             <p class="flip-hint">Voir un exemple chiffré</p>
           </div>
           <div class="face face-back">
@@ -941,6 +1066,17 @@ tr.detail-row:hover>td{background:#FCFCF9}
               <div class="fact"><dt>Gains &amp; dividendes</dt><dd><span class="moins">31,4 %</span> (<button type="button" class="terme" data-t="flattax">flat tax</button> 2026)</dd></div>
               <div class="fact"><dt>Option barème</dt><dd>Possible si avantageux</dd></div>
             </dl>
+
+            <div class="seuil">
+              <div class="seuil-titre">Le point de bascule</div>
+              <div class="seuil-axe" role="img" aria-label="Aucun seuil de durée : chaque vente en gain est imposée à 31,4 %, quelle que soit la durée de détention.">
+                <div class="seuil-seg continu"><b>Aucun seuil de durée</b><small>chaque vente en gain est imposée, dès le premier jour comme après vingt ans</small></div>
+              </div>
+              <p class="seuil-note">C'est la contrepartie de la liberté : garder ses titres reste
+                <strong>neutre fiscalement</strong>, mais chaque arbitrage déclenche l'impôt. Le CTO
+                récompense donc l'immobilisme autant que le PEA récompense la patience.</p>
+            </div>
+
             <p class="flip-hint">Voir un exemple chiffré</p>
           </div>
           <div class="face face-back">
@@ -982,8 +1118,22 @@ tr.detail-row:hover>td{background:#FCFCF9}
               <div class="fact"><dt>Plafond</dt><dd><span class="plus">Aucun</span></dd></div>
               <div class="fact"><dt>Supports possibles</dt><dd>Fonds euros + <button type="button" class="terme" data-t="uc">unités de compte</button></dd></div>
               <div class="fact"><dt>Après 8 ans (retrait)</dt><dd><span class="plus">Abattement 4 600 € / 9 200 €</span></dd></div>
-              <div class="fact"><dt>Prél. sociaux sur gains</dt><dd>18,6 %</dd></div>
+              <div class="fact"><dt>Prél. sociaux sur gains</dt><dd><span class="plus">17,2 %</span> (non relevés en 2026)</dd></div>
+              <div class="fact"><dt>Transmission</dt><dd><span class="plus">152 500 € exonérés</span> par bénéficiaire</dd></div>
             </dl>
+
+            <div class="seuil">
+              <div class="seuil-titre">Le point de bascule</div>
+              <div class="seuil-axe" role="img" aria-label="Avant 8 ans : 30 % sur la part de gain. Après 8 ans : abattement annuel de 4 600 euros puis 7,5 % d'impôt.">
+                <div class="seuil-seg avant"><b>30 %</b><small>sur la part de gain</small></div>
+                <div class="seuil-pivot">8 ans</div>
+                <div class="seuil-seg apres"><b>4 600 € exonérés / an</b><small>puis 7,5 % + 17,2 % de prél. sociaux</small></div>
+              </div>
+              <p class="seuil-note"><strong>Deux exonérations distinctes</strong>, souvent confondues :
+                l'abattement annuel de 4 600 € s'applique quand <em>vous</em> retirez de votre vivant ;
+                les 152 500 € par bénéficiaire s'appliquent à votre <em>décès</em>. Elles se cumulent.</p>
+            </div>
+
             <p class="flip-hint">Voir un exemple chiffré</p>
           </div>
           <div class="face face-back">
@@ -995,16 +1145,23 @@ tr.detail-row:hover>td{background:#FCFCF9}
               <p>Elle retire 10 000 €. Seule la part de gain de ce retrait est imposable, soit environ
               <strong>2 300 €</strong>. Comme le contrat a plus de 8 ans, l'abattement annuel de 4 600 €
               (personne seule) <span class="plus">absorbe entièrement cette part</span> : pas d'impôt sur le
-              revenu, seulement les 18,6 % de prélèvements sociaux.</p>
-              <p>Le même retrait sur un contrat de 3 ans aurait été taxé <span class="moins">à 31,4 %</span>
+              revenu, seulement les 17,2 % de prélèvements sociaux.</p>
+              <p>Le même retrait sur un contrat de 3 ans aurait été taxé <span class="moins">à 30 %</span>
               sur la part de gain.</p>
             </div>
             <ul>
-              <li>L'abattement annuel après 8 ans porte sur les gains retirés : 4 600 € seul, 9 200 € en couple.</li>
-              <li><span class="moins">Les frais varient énormément</span> d'un contrat à l'autre (versement,
-                gestion, arbitrage) : c'est le premier critère à comparer.</li>
-              <li>En cas de décès, les capitaux transmis relèvent d'un cadre spécifique, souvent
-                <span class="plus">plus favorable que la succession classique</span>.</li>
+              <li><b>L'abattement se recharge chaque année.</b> 4 600 € de gains exonérés d'impôt
+                par an, indéfiniment. Étaler ses retraits plutôt que tout sortir d'un coup peut donc
+                <span class="plus">annuler l'impôt</span> ; seuls les prélèvements sociaux restent dus.</li>
+              <li><b>Prélèvements sociaux restés à 17,2 %.</b> L'assurance-vie a été exclue de la
+                hausse de 2026, contrairement au PEA et au CTO passés à 18,6 % :
+                <span class="plus">1,4 point d'écart</span> en sa faveur.</li>
+              <li><b>Au décès : 152 500 € exonérés par bénéficiaire</b> pour les versements faits
+                avant vos 70 ans, puis 20 %. Avec trois bénéficiaires, <span class="plus">457 500 €</span>
+                transmis hors droits de succession. Après 70 ans, l'abattement tombe à 30 500 € global —
+                mais <span class="plus">les gains restent exonérés</span>.</li>
+              <li><span class="moins">Les frais varient énormément</span> d'un contrat à l'autre :
+                premier critère à comparer, il peut annuler l'avantage fiscal.</li>
             </ul>
             <p class="flip-hint">Revenir au recto</p>
           </div>
@@ -1020,9 +1177,15 @@ tr.detail-row:hover>td{background:#FCFCF9}
         <span class="num">31,4 %</span> : la <button type="button" class="terme" data-t="csg">CSG</button>
         sur les revenus du capital a augmenté (loi de financement de la Sécurité sociale 2026), portant les
         <button type="button" class="terme" data-t="ps">prélèvements sociaux</button> de 17,2 % à
-        <span class="num">18,6 %</span>. Beaucoup de sites affichent encore les
-        anciens taux. Quelques produits conservent l'ancien taux par dérogation — au moindre doute,
-        vérifiez sur le site officiel de l'administration fiscale.
+        <span class="num">18,6 %</span>. Beaucoup de sites affichent encore les anciens taux.
+      </p>
+      <p>
+        <strong>Mais pas partout :</strong> l'<strong>assurance-vie</strong> a été explicitement exclue
+        de cette hausse et conserve des prélèvements sociaux à <span class="num">17,2 %</span>, tout
+        comme les PEL et CEL. Le <strong>PEA</strong> et le <strong>compte-titres</strong>, eux, sont
+        bien passés à 18,6 %. Cela crée <span class="num">1,4 point</span> d'écart en faveur de
+        l'assurance-vie, qui n'existait pas avant 2026. Au moindre doute, vérifiez sur le site officiel
+        de l'administration fiscale.
       </p>
     </div>
 
@@ -1030,6 +1193,170 @@ tr.detail-row:hover>td{background:#FCFCF9}
       <strong>À lire.</strong> Ces fiches sont un contenu pédagogique général : elles décrivent le
       fonctionnement des enveloppes, pas ce que <em>vous</em> devriez faire. Le choix d'ouvrir l'une,
       l'autre ou plusieurs vous appartient entièrement.
+    </div>
+
+    <div class="suite">
+      <button data-goto="fiscalite">Et concrètement, combien d'impôts ? ⟶</button>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== FISCALITÉ ===================== -->
+<section class="page" id="page-fiscalite">
+  <div class="wrap section-pad">
+    <p class="eyebrow">Comprendre · L'addition fiscale</p>
+    <h2>La même somme, trois enveloppes, trois additions.</h2>
+    <p class="section-intro">
+      Les taux ne disent pas grand-chose tant qu'on ne les applique pas. Voici
+      <strong>le même investissement</strong> dans les trois enveloppes, avec les calculs détaillés —
+      d'abord quand vous retirez de votre vivant, ensuite quand vous transmettez à votre décès.
+      Ce sont deux logiques opposées, et <strong>l'enveloppe gagnante n'est pas la même</strong>.
+    </p>
+
+    <div class="notice amber">
+      <strong>Des exemples, pas votre situation.</strong> Ces chiffres illustrent un mécanisme sur un
+      cas volontairement simple. Ils ignorent votre tranche d'imposition, vos autres revenus, votre
+      situation familiale et les frais de votre contrat. Ils ne constituent ni un calcul d'impôt, ni
+      une recommandation : seul un professionnel régulé peut vous dire ce qui s'applique à vous.
+    </div>
+
+    <!-- ---------- Scénario 1 : retrait ---------- -->
+    <div class="fisc-scenario">
+      <div class="fisc-titre">
+        <span class="fisc-num">1</span>
+        <div>
+          <h3>Vous retirez de votre vivant</h3>
+          <p>Vous avez investi <strong>50 000 €</strong>. Dix ans plus tard, votre épargne vaut
+            <strong>80 000 €</strong>, soit <strong>30 000 € de gains</strong>. Vous retirez tout.</p>
+        </div>
+      </div>
+
+      <div class="fisc-grille">
+        <article class="fisc-carte gagnant">
+          <div class="fisc-carte-tete"><h4>PEA</h4><span class="fisc-badge">moins taxé</span></div>
+          <ul class="fisc-calcul">
+            <li><span>Gains</span><b>30 000 €</b></li>
+            <li><span>Impôt sur le revenu <small>(après 5 ans)</small></span><b class="ok">0 €</b></li>
+            <li><span>Prélèvements sociaux <small>18,6 %</small></span><b>5 580 €</b></li>
+          </ul>
+          <div class="fisc-total"><span>Vous encaissez</span><b>74 420 €</b></div>
+          <p class="fisc-cmt">L'exonération d'impôt ne porte que sur l'impôt sur le revenu. Les
+            prélèvements sociaux, eux, restent toujours dus.</p>
+        </article>
+
+        <article class="fisc-carte">
+          <div class="fisc-carte-tete"><h4>Assurance-vie</h4><span class="fisc-badge neutre">intermédiaire</span></div>
+          <ul class="fisc-calcul">
+            <li><span>Gains</span><b>30 000 €</b></li>
+            <li><span>Abattement annuel <small>(après 8 ans, seul)</small></span><b class="ok">− 4 600 €</b></li>
+            <li><span>Impôt <small>7,5 % sur 25 400 €</small></span><b>1 905 €</b></li>
+            <li><span>Prélèvements sociaux <small>17,2 % sur 30 000 €</small></span><b>5 160 €</b></li>
+          </ul>
+          <div class="fisc-total"><span>Vous encaissez</span><b>72 935 €</b></div>
+          <p class="fisc-cmt">L'abattement réduit l'impôt, <strong>pas</strong> les prélèvements
+            sociaux, qui portent sur la totalité du gain. En étalant le retrait sur plusieurs années,
+            l'impôt de 1 905 € pourrait être ramené à zéro.</p>
+        </article>
+
+        <article class="fisc-carte perdant">
+          <div class="fisc-carte-tete"><h4>Compte-titres</h4><span class="fisc-badge alerte">le plus taxé</span></div>
+          <ul class="fisc-calcul">
+            <li><span>Gains</span><b>30 000 €</b></li>
+            <li><span>Flat tax <small>12,8 % d'impôt</small></span><b>3 840 €</b></li>
+            <li><span>Prélèvements sociaux <small>18,6 %</small></span><b>5 580 €</b></li>
+          </ul>
+          <div class="fisc-total"><span>Vous encaissez</span><b>70 580 €</b></div>
+          <p class="fisc-cmt">Aucun seuil de durée, aucun abattement. En revanche l'impôt n'est dû
+            qu'au moment de la vente : ne pas vendre ne coûte rien.</p>
+        </article>
+      </div>
+
+      <p class="fisc-conclusion">
+        <strong>Écart entre la meilleure et la pire : 3 840 €</strong>, soit près de 13 % des gains.
+        Sur ce cas, le PEA l'emporte nettement — à condition d'avoir dépassé 5 ans et de n'investir
+        que dans des supports éligibles.
+      </p>
+    </div>
+
+    <!-- ---------- Scénario 2 : transmission ---------- -->
+    <div class="fisc-scenario">
+      <div class="fisc-titre">
+        <span class="fisc-num">2</span>
+        <div>
+          <h3>Vous transmettez à votre décès</h3>
+          <p>Même épargne, <strong>200 000 €</strong> au moment du décès, dont
+            <strong>100 000 € de gains</strong>. Un enfant unique, désigné bénéficiaire.
+            Versements effectués <strong>avant vos 70 ans</strong>.</p>
+        </div>
+      </div>
+
+      <div class="fisc-grille">
+        <article class="fisc-carte gagnant">
+          <div class="fisc-carte-tete"><h4>Assurance-vie</h4><span class="fisc-badge">le plus favorable</span></div>
+          <ul class="fisc-calcul">
+            <li><span>Capital transmis</span><b>200 000 €</b></li>
+            <li><span>Abattement <small>152 500 € par bénéficiaire</small></span><b class="ok">− 152 500 €</b></li>
+            <li><span>Prélèvement <small>20 % sur 47 500 €</small></span><b>9 500 €</b></li>
+          </ul>
+          <div class="fisc-total"><span>Votre enfant reçoit</span><b>190 500 €</b></div>
+          <p class="fisc-cmt">Le capital est transmis <strong>hors succession</strong> : l'abattement
+            successoral de 100 000 € par enfant reste entièrement disponible pour le reste de votre
+            patrimoine. C'est là tout l'intérêt.</p>
+        </article>
+
+        <article class="fisc-carte">
+          <div class="fisc-carte-tete"><h4>Compte-titres</h4><span class="fisc-badge neutre">plus-values effacées</span></div>
+          <ul class="fisc-calcul">
+            <li><span>Capital transmis</span><b>200 000 €</b></li>
+            <li><span>Impôt sur les 100 000 € de gains</span><b class="ok">0 €</b></li>
+            <li><span>Entre dans la succession</span><b>200 000 €</b></li>
+            <li><span>Abattement enfant</span><b class="ok">− 100 000 €</b></li>
+          </ul>
+          <div class="fisc-total"><span>Assiette taxable</span><b>100 000 €</b></div>
+          <p class="fisc-cmt">Surprise : les plus-values latentes sont <strong>totalement
+            effacées</strong> au décès — le prix de revient est réévalué à la valeur du jour. Les
+            gains de toute une vie échappent à l'impôt. Restent les droits de succession classiques.</p>
+        </article>
+
+        <article class="fisc-carte perdant">
+          <div class="fisc-carte-tete"><h4>PEA</h4><span class="fisc-badge alerte">clôturé d'office</span></div>
+          <ul class="fisc-calcul">
+            <li><span>Capital transmis</span><b>200 000 €</b></li>
+            <li><span>Prélèvements sociaux <small>18,6 % sur les gains</small></span><b>18 600 €</b></li>
+            <li><span>Entre dans la succession</span><b>181 400 €</b></li>
+            <li><span>Abattement enfant</span><b class="ok">− 100 000 €</b></li>
+          </ul>
+          <div class="fisc-total"><span>Assiette taxable</span><b>81 400 €</b></div>
+          <p class="fisc-cmt">Le plan est <strong>clôturé automatiquement</strong> au décès. Les gains
+            échappent à l'impôt sur le revenu mais pas aux prélèvements sociaux. Les titres basculent
+            ensuite sur un compte-titres, avec prix de revient réévalué.</p>
+        </article>
+      </div>
+
+      <p class="fisc-conclusion">
+        <strong>Le classement s'inverse.</strong> Le PEA, champion du retrait, devient le moins
+        avantageux à la transmission. L'assurance-vie, elle, sort son argument décisif : les
+        152 500 € par bénéficiaire sont <em>hors succession</em>, et se cumulent donc avec
+        l'abattement de 100 000 € applicable au reste du patrimoine.
+      </p>
+    </div>
+
+    <div class="notice">
+      <strong>Ce qu'il faut retenir.</strong> Il n'existe pas d'enveloppe « la meilleure » : tout
+      dépend de ce que vous comptez faire de cet argent. Retirer de son vivant favorise le PEA ;
+      transmettre favorise l'assurance-vie ; le compte-titres, souvent présenté comme le plus taxé,
+      redevient intéressant en transmission grâce à l'effacement des plus-values. Beaucoup de gens
+      en détiennent d'ailleurs plusieurs, chacune pour un usage différent.
+    </div>
+
+    <div class="notice green">
+      <strong>Les règles utilisées ici.</strong> Prélèvements sociaux à 18,6 % sur PEA et compte-titres,
+      <strong>17,2 % sur l'assurance-vie</strong> (exclue de la hausse de 2026). Flat tax de 31,4 %.
+      Assurance-vie de plus de 8 ans avec moins de 150 000 € de primes versées : abattement annuel de
+      4 600 € puis 7,5 %. Transmission : 152 500 € par bénéficiaire pour les versements avant 70 ans,
+      puis 20 % jusqu'à 700 000 € ; au-delà de 70 ans, abattement global de 30 500 € mais gains
+      exonérés. Abattement successoral en ligne directe : 100 000 € par enfant. Vérifiez toujours sur
+      le site de l'administration fiscale : ces règles changent régulièrement.
     </div>
 
     <div class="suite">
@@ -1458,6 +1785,16 @@ tr.detail-row:hover>td{background:#FCFCF9}
           </div>
 
           <div class="sim-field">
+            <label>Dans quelle enveloppe ?</label>
+            <div class="env-choix" id="env-choix" role="group" aria-label="Enveloppe">
+              <button type="button" data-env="pea">PEA</button>
+              <button type="button" data-env="cto" aria-pressed="true">CTO</button>
+              <button type="button" data-env="av">Assurance-vie</button>
+            </div>
+            <p class="env-choix-note" id="env-choix-note"></p>
+          </div>
+
+          <div class="sim-field">
             <label>Répartition</label>
             <div class="alloc-lignes" id="alloc-lignes"></div>
             <div class="alloc-actions">
@@ -1700,6 +2037,35 @@ tr.detail-row:hover>td{background:#FCFCF9}
 
 <script>
 /* ---------- DONNÉES ETF (indicatives, juillet 2026) ---------- */
+/* ---------- EN UN COUP D'ŒIL : à quoi sert chaque ETF ----------
+   La composition détaillée dit CE QUE contient le fonds, pas POURQUOI on le
+   choisirait. Ces deux phrases donnent la ligne directrice à quelqu'un qui
+   découvre — c'est ce qui manque quand on lit « Vanguard FTSE All-World (dist.) »
+   sans savoir ce que ça recouvre.
+   `emetteur` sert à nommer le lien vers la fiche officielle.                  */
+const DESCRIPTIONS = {
+  IWDA: {emetteur:"iShares", texte:"Les ~1 300 plus grandes entreprises des 23 pays <strong>développés</strong> : États-Unis, Japon, Europe, Canada, Australie. Ni pays émergents, ni petites capitalisations — c'est la brique la plus répandue d'un portefeuille long terme, en une seule ligne."},
+  VWCE: {emetteur:"Vanguard", texte:"Encore plus large que le MSCI World : ~3 700 entreprises de 49 pays, développés <strong>et émergents</strong> (Chine, Inde, Taïwan, Brésil). La couverture la plus complète du marché mondial en un seul fonds. Les dividendes sont réinvestis automatiquement."},
+  VWRL: {emetteur:"Vanguard", texte:"<strong>Exactement le même portefeuille que le VWCE</strong> — mêmes 3 700 entreprises, même indice. Une seule différence : celui-ci vous <strong>verse les dividendes en argent</strong> quatre fois par an au lieu de les réinvestir. À privilégier si vous voulez un revenu, à éviter si vous capitalisez (chaque versement est imposable)."},
+  WEBN: {emetteur:"Amundi", texte:"Même ambition mondiale que le VWCE (développés + émergents), mais avec des frais parmi les plus bas du marché. Fonds récent, donc peu d'historique — jeunesse du fonds, pas de l'indice."},
+  CW8:  {emetteur:"Amundi", texte:"Le MSCI World rendu <strong>éligible au PEA</strong>. Le fonds ne détient pas les actions mondiales : il détient un panier européen et échange sa performance contre celle de l'indice mondial via un contrat (swap). C'est ce montage qui permet d'avoir le monde entier dans un PEA."},
+  WPEA: {emetteur:"iShares", texte:"La réponse d'iShares au CW8 : MSCI World éligible PEA par le même mécanisme de swap, avec des frais plus bas. Lancé en 2024, d'où un historique court."},
+  EWLD: {emetteur:"Amundi", texte:"Autre MSCI World éligible PEA, historiquement le premier du genre. Frais nettement plus élevés que ses concurrents plus récents — un cas où l'ancienneté ne joue pas en sa faveur."},
+  CSPX: {emetteur:"iShares", texte:"Les 500 plus grandes entreprises américaines cotées : Apple, Microsoft, NVIDIA, Amazon… Environ 70 % de la capitalisation boursière des États-Unis. Très concentré sur la technologie, et sur un seul pays."},
+  SPYL: {emetteur:"State Street SPDR", texte:"Le même S&P 500 que le CSPX, chez un autre émetteur et avec des frais encore plus bas. Fonds récent : l'historique est court, mais l'indice suivi est identique."},
+  PE500:{emetteur:"Amundi", texte:"Le S&P 500 <strong>logé dans un PEA</strong>, via un swap comme le CW8. Permet de s'exposer aux grandes valeurs américaines tout en gardant l'avantage fiscal du PEA après 5 ans."},
+  ESE:  {emetteur:"BNP Paribas", texte:"S&P 500 éligible PEA également, concurrent direct du PE500. Même indice, même mécanisme de swap, émetteur différent."},
+  PANX: {emetteur:"Amundi", texte:"Les 100 plus grandes valeurs du Nasdaq, hors sociétés financières : la <strong>technologie américaine</strong> concentrée. Plus de 55 % du fonds sur un seul secteur, ce qui amplifie aussi bien les hausses que les baisses. Éligible PEA."},
+  MEUD: {emetteur:"Amundi", texte:"Les 600 principales entreprises européennes, 17 pays confondus : le fonds le plus large sur l'Europe. Composition très différente des indices américains — banques, industrie et santé y pèsent bien plus que la technologie. Éligible PEA."},
+  IMAE: {emetteur:"iShares", texte:"Les ~400 grandes et moyennes entreprises des pays développés européens. Périmètre proche du Stoxx 600 mais un peu plus resserré, et hors PEA."},
+  CACC: {emetteur:"Amundi", texte:"Les 40 plus grandes entreprises françaises. <strong>Très concentré</strong> : les 10 premières lignes pèsent plus de la moitié du fonds. À voir comme un pari sur la France, pas comme une diversification."},
+  EIMI: {emetteur:"iShares", texte:"Les marchés <strong>émergents</strong> : Taïwan, Corée, Chine, Inde, Brésil… « IMI » signifie qu'il inclut aussi les petites capitalisations, soit plus de 3 000 entreprises. Complément classique d'un fonds « pays développés »."},
+  PAEEM:{emetteur:"Amundi", texte:"Marchés émergents éligibles PEA, via un swap. Attention : il ne suit pas le MSCI Emerging classique mais une <strong>version filtrée selon des critères ESG</strong>, donc une sélection d'entreprises plus restreinte."},
+  AGGH: {emetteur:"iShares", texte:"Des <strong>obligations</strong>, pas des actions : près de 20 000 emprunts d'États et d'entreprises du monde entier. « EUR-H » signifie que le risque de change est neutralisé. Sert d'amortisseur face aux actions, avec un rendement attendu plus faible."},
+  EM710:{emetteur:"Amundi", texte:"Emprunts d'État de la zone euro à échéance 7 à 10 ans (France, Italie, Allemagne, Espagne). Plus la durée est longue, plus la valeur réagit aux variations de taux d'intérêt."},
+  TDIV: {emetteur:"VanEck", texte:"Une centaine d'entreprises des pays développés sélectionnées pour leurs <strong>dividendes élevés</strong> : énergie, banques, télécoms. Profil très différent d'un indice large — presque pas de technologie, et les dividendes sont versés, pas réinvestis."},
+};
+
 const ETFS = [
   {nom:"iShares Core MSCI World", ticker:"IWDA", isin:"IE00B4L5Y983", indice:"MSCI World", zone:"Monde", frais:0.20, encours:95, pea:false, dist:"Capitalisant", repli:"Physique"},
   {nom:"Vanguard FTSE All-World", ticker:"VWCE", isin:"IE00BK5BQT80", indice:"FTSE All-World", zone:"Monde", frais:0.19, encours:38, pea:false, dist:"Capitalisant", repli:"Physique"},
@@ -1929,7 +2295,7 @@ const LEXIQUE = {
   cto: {mot:"Le CTO", court:"Compte-titres ordinaire : aucune limite d'instruments ni de montant, mais les gains sont imposés au fil des ventes."},
   flattax: {mot:"La flat tax (PFU)", court:"Prélèvement forfaitaire unique appliqué aux revenus du capital : 31,4 % en 2026, soit 12,8 % d'impôt + 18,6 % de prélèvements sociaux."},
   csg: {mot:"La CSG", court:"Contribution sociale généralisée : le principal des prélèvements sociaux. Sa hausse au 1ᵉʳ janvier 2026 explique le passage de la flat tax de 30 % à 31,4 %."},
-  ps: {mot:"Les prélèvements sociaux", court:"CSG, CRDS et prélèvement de solidarité, dus sur les gains du capital : 18,6 % depuis 2026. Ils s'appliquent même quand l'impôt sur le revenu, lui, ne s'applique pas."},
+  ps: {mot:"Les prélèvements sociaux", court:"CSG, CRDS et prélèvement de solidarité, dus sur les gains du capital : 18,6 % depuis 2026 sur le PEA et le compte-titres, mais 17,2 % sur l'assurance-vie, exclue de la hausse. Ils s'appliquent même quand l'impôt sur le revenu, lui, ne s'applique pas."},
   ifu: {mot:"L'IFU", court:"Imprimé fiscal unique : le récapitulatif que votre courtier transmet au fisc et qui pré-remplit votre déclaration. Les courtiers étrangers n'en fournissent pas toujours."},
   f2074: {mot:"Le formulaire 2074", court:"La déclaration détaillée des plus-values de cession, à remplir soi-même quand le courtier ne fournit pas de récapitulatif fiscal français."},
   f3916: {mot:"Le formulaire 3916", court:"La déclaration des comptes détenus à l'étranger. Obligatoire chaque année, avec une amende de 1 500 € par compte non déclaré."},
@@ -2190,12 +2556,33 @@ function lignes(det){
 const lienJustetf = isin =>
   `<a href="https://www.justetf.com/fr/etf-profile.html?isin=${isin}" target="_blank" rel="noopener">justETF · ${isin}</a>`;
 
+/* La ligne directrice du fonds, en tête de fiche : la composition dit ce que
+   l'ETF CONTIENT, pas à quoi il sert. Le lien mène au profil complet, où
+   figurent le DIC et les documents officiels de l'émetteur — on n'invente pas
+   d'URL produit, ces adresses changent et un lien mort vaut moins que rien. */
+function presentation(e){
+  const d = DESCRIPTIONS[e.ticker];
+  if(!d) return '';
+  return `
+    <div class="etf-intro">
+      <h4>En deux mots</h4>
+      <p>${d.texte}</p>
+      <p class="etf-intro-lien">
+        <a href="https://www.justetf.com/fr/etf-profile.html?isin=${e.isin}"
+           target="_blank" rel="noopener">
+          Fiche complète et documents ${esc(d.emetteur)} (DIC, prospectus) ↗
+        </a>
+      </p>
+    </div>`;
+}
+
 function detailHTML(e){
   const syn = SYNTH[e.isin];
 
   // Cas 1 — synthétique sans indice mesurable : on ne comble pas le trou.
   if(syn && !syn.ref){
     return `<div class="detail">
+      ${presentation(e)}
       <div class="detail-flag">
         <div><strong>Composition non publiée.</strong> Cet ETF est à réplication synthétique :
         il détient un panier d'actions éligibles au PEA et échange sa performance contre celle de
@@ -2237,6 +2624,7 @@ function detailHTML(e){
     : `${lienJustetf(e.isin)}, données arrêtées au ${det.d}.`;
 
   return `<div class="detail">
+    ${presentation(e)}
     ${drapeau}
     <div class="detail-grid">${blocs}</div>
     ${noteObl}
@@ -2546,7 +2934,8 @@ function simulate(allocation, capital, iStart, iEnd){
 }
 
 /* ---------- État de l'interface ---------- */
-const simState = {rows: [{ticker:'IWDA', weight:60}, {ticker:'MEUD', weight:40}], iStart: 0};
+const simState = {rows: [{ticker:'IWDA', weight:60}, {ticker:'MEUD', weight:40}],
+                  iStart: 0, enveloppe: 'cto'};
 
 const elRows = document.getElementById('alloc-lignes');
 const elTotal = document.getElementById('alloc-total');
@@ -2572,8 +2961,32 @@ const isEuro = t => currencyOf(t).toUpperCase() === 'EUR';
 // serait du bruit, l'omettre là où elle change tout serait un piège.
 const optionLabel = t => isEuro(t) ? nameOf(t) : `${nameOf(t)} (${currencyOf(t)})`;
 
+/* Les fonds retenus selon l'enveloppe choisie.
+   PEA : l'éligibilité est une propriété du FONDS, donc filtrable de façon sûre.
+   CTO : aucune restriction, tout est accessible.
+   AV  : l'offre dépend ENTIÈREMENT du contrat souscrit — deux assureurs ne
+         proposent pas la même liste. On n'invente donc aucun filtre, on le dit. */
+function availableTickers(){
+  const tous = Object.keys(PRICES.instruments);
+  if(simState.enveloppe !== 'pea') return tous;
+  return tous.filter(t => {
+    const e = ETFS.find(x => x.ticker === t);
+    return e && e.pea;
+  });
+}
+
+const NOTES_ENVELOPPE = {
+  pea: `<strong>Seuls les fonds éligibles PEA</strong> sont proposés ci-dessous. Les ETF « monde »
+        ou « S&P 500 » qui y figurent y parviennent par un montage synthétique.`,
+  cto: `Aucune restriction : le compte-titres donne accès à tous les fonds, sans plafond de versement.`,
+  av:  `<strong>Attention</strong> — la liste ci-dessous n'est <em>pas</em> filtrée : l'offre en
+        assurance-vie dépend entièrement du contrat souscrit, et deux assureurs ne proposent pas les
+        mêmes supports. Vérifiez la liste des unités de compte de votre contrat avant de vous fier
+        à cette simulation.`
+};
+
 function renderRows(){
-  const available = Object.keys(PRICES.instruments).sort((a,b) => nameOf(a).localeCompare(nameOf(b),'fr'));
+  const available = availableTickers().sort((a,b) => nameOf(a).localeCompare(nameOf(b),'fr'));
   elRows.innerHTML = simState.rows.map((l, n) => `
     <div class="alloc-ligne">
       <select data-n="${n}" aria-label="ETF de la ligne ${n+1}">
@@ -2958,6 +3371,31 @@ elEqualise.addEventListener('click', () => {
   simState.rows[0].weight = +(100 - share * (n - 1)).toFixed(1);
   renderRows(); runSimulation();
 });
+document.getElementById('env-choix').addEventListener('click', ev => {
+  const b = ev.target.closest('button[data-env]');
+  if(!b) return;
+  simState.enveloppe = b.dataset.env;
+  document.querySelectorAll('#env-choix button').forEach(x =>
+    x.setAttribute('aria-pressed', x === b));
+
+  const note = document.getElementById('env-choix-note');
+  note.innerHTML = NOTES_ENVELOPPE[simState.enveloppe];
+  note.classList.toggle('avert', simState.enveloppe === 'av');
+
+  // Une ligne devenue inéligible ne peut pas rester sélectionnée en silence :
+  // on la remplace par un fonds disponible, en conservant son poids.
+  const dispo = availableTickers();
+  const remplacant = dispo.find(t => !simState.rows.some(r => r.ticker === t)) || dispo[0];
+  simState.rows = simState.rows.map(r =>
+    dispo.includes(r.ticker) ? r : {...r, ticker: remplacant});
+  // deux lignes ont pu converger vers le même fonds : on dédoublonne
+  const vus = new Set();
+  simState.rows = simState.rows.filter(r => !vus.has(r.ticker) && vus.add(r.ticker));
+  if(!simState.rows.length) simState.rows = [{ticker: dispo[0], weight: 100}];
+
+  renderRows(); runSimulation();
+});
+
 elCapital.addEventListener('input', runSimulation);
 document.querySelectorAll('.sim-preset button').forEach(b => {
   b.addEventListener('click', () => { elCapital.value = b.dataset.capital; runSimulation(); });
@@ -2979,6 +3417,7 @@ fetch('data/cours.json', {cache: 'no-cache'})
     prepareSeries();
     // Position de départ : ~5 ans en arrière si l'historique le permet.
     simState.iStart = Math.max(0, PRICES.dates.length - 1 - 1260);
+    document.getElementById('env-choix-note').innerHTML = NOTES_ENVELOPPE[simState.enveloppe];
     renderRows();
     runSimulation();
   })
